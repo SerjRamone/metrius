@@ -6,6 +6,9 @@ build-server:
 build-agent:
 	go build -o cmd/agent/agent cmd/agent/*.go
 
+stattest:
+	go vet -vettool=statictest ./...
+	
 autotests:
 	./metricstest
 	

@@ -24,6 +24,7 @@ func TestPostCollection(t *testing.T) {
 		"value": "134024",
 	}
 	resp, err := postMetrics(server.URL, m)
+	resp.Body.Close()
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 }

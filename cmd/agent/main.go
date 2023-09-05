@@ -59,9 +59,11 @@ func main() {
 // send whole Collection
 func postCollection(c metrics.Collection) {
 	for _, m := range c {
-		if _, err := postMetrics(ServerURL, m); err != nil {
+		r, err := postMetrics(ServerURL, m)
+		if err != nil {
 			log.Println(err)
 		}
+		r.Body.Close()
 	}
 }
 

@@ -26,3 +26,6 @@ vendor/
 
 # autotest
 metricstest
+
+# statictest
+statictest
