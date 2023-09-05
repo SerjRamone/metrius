@@ -2,6 +2,7 @@
 package main
 
 import (
+	"io"
 	"log"
 	"net/http"
 	"runtime"
@@ -65,13 +66,17 @@ func postCollection(c metrics.Collection) {
 }
 
 // single request
-func postMetrics(sUrl string, m map[string]string) (*http.Response, error) {
-	url := sUrl + "/update/" + m["type"] + "/" + m["name"] + "/" + m["value"]
+func postMetrics(sURL string, m map[string]string) (*http.Response, error) {
+	url := sURL + "/update/" + m["type"] + "/" + m["name"] + "/" + m["value"]
 	r, err := http.Post(url, "text/plain", nil)
 	if err != nil {
 		return nil, err
 	}
-	defer r.Body.Close()
+	_, err = io.Copy(io.Discard, r.Body)
+	r.Body.Close()
+	if err != nil {
+		return nil, err
+	}
 
 	return r, nil
 }
