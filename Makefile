@@ -10,4 +10,7 @@ autotests:
 	./metricstest
 	
 autotests1:
-	./metricstest -test.v -test.run=^TestIteration1$ -agent-binary-path=cmd/agent/agent
+	./metricstest -test.v -test.run=^TestIteration1$$ -agent-binary-path=cmd/agent/agent -binary-path=cmd/server/server
+
+autotests2:
+	./metricstest -test.v -test.run=^TestIteration2[AB]*$$ -source-path=. -agent-binary-path=cmd/agent/agent
