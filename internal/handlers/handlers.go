@@ -81,8 +81,8 @@ func List(s storage.Storage) http.HandlerFunc {
 func Value(s storage.Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var (
-			mType  string = chi.URLParam(r, "type")
-			mName  string = chi.URLParam(r, "name")
+			mType  = chi.URLParam(r, "type")
+			mName  = chi.URLParam(r, "name")
 			mValue string
 		)
 
@@ -114,9 +114,9 @@ func Value(s storage.Storage) http.HandlerFunc {
 func Update(s storage.Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var (
-			mValue string = chi.URLParam(r, "value")
-			mType  string = chi.URLParam(r, "type")
-			mName  string = chi.URLParam(r, "name")
+			mValue = chi.URLParam(r, "value")
+			mType  = chi.URLParam(r, "type")
+			mName  = chi.URLParam(r, "name")
 		)
 
 		// @todo

@@ -182,6 +182,7 @@ func TestRouter(t *testing.T) {
 	for _, v := range tests {
 		t.Run(v.name, func(t *testing.T) {
 			resp, respText := testRequest(t, ts, v.method, v.urlPath)
+			resp.Body.Close()
 			assert.Equal(t, v.want.statusCode, resp.StatusCode)
 			if v.want.responseText != "" {
 				assert.Equal(t, v.want.responseText, respText)
