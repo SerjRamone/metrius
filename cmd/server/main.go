@@ -16,8 +16,6 @@ func main() {
 
 func run() error {
 	mStorage := storage.New()
-	mux := http.NewServeMux()
-	mux.HandleFunc("/update/", handlers.Update(mStorage))
 
-	return http.ListenAndServe(":8080", mux)
+	return http.ListenAndServe(":8080", handlers.Router(mStorage))
 }

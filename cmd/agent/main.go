@@ -12,8 +12,8 @@ import (
 )
 
 var (
-	pollInterval   int = 2
-	reportInterval int = 10
+	pollInterval   = 2
+	reportInterval = 10
 )
 
 const ServerURL = "http://localhost:8080"
@@ -74,8 +74,8 @@ func postMetrics(sURL string, m map[string]string) (*http.Response, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer r.Body.Close()
 	_, err = io.Copy(io.Discard, r.Body)
-	r.Body.Close()
 	if err != nil {
 		return nil, err
 	}

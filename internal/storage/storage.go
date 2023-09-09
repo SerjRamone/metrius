@@ -14,8 +14,10 @@ var errorStorageNotInit = errors.New("storage is not initialized")
 type Storage interface {
 	SetGauge(string, metrics.Gauge) error
 	Gauge(string) (metrics.Gauge, bool)
+	Gauges() map[string]metrics.Gauge
 	SetCounter(string, metrics.Counter) error
 	Counter(string) (metrics.Counter, bool)
+	Counters() map[string]metrics.Counter
 	String() string
 }
 
@@ -61,6 +63,16 @@ func (s MemStorage) SetCounter(name string, value metrics.Counter) error {
 func (s MemStorage) Counter(name string) (v metrics.Counter, ok bool) {
 	v, ok = s.counters[name]
 	return
+}
+
+// Gauges returns map of all setted gauges
+func (s MemStorage) Gauges() map[string]metrics.Gauge {
+	return s.gauges
+}
+
+// Counters returns map of all setted gauges
+func (s MemStorage) Counters() map[string]metrics.Counter {
+	return s.counters
 }
 
 // String returns data as string
