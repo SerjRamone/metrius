@@ -11,14 +11,8 @@ import (
 	"github.com/SerjRamone/metrius/internal/metrics"
 )
 
-var (
-	pollInterval   = 2
-	reportInterval = 10
-)
-
-const ServerURL = "http://localhost:8080"
-
 func main() {
+	parseFlags()
 	collections := make(map[int64]metrics.Collection, 4)
 	m := runtime.MemStats{}
 	reportedAt := time.Now()
@@ -59,9 +53,10 @@ func main() {
 // send whole Collection
 func postCollection(c metrics.Collection) {
 	for _, m := range c {
-		r, err := postMetrics(ServerURL, m)
+		r, err := postMetrics("http://"+serverAddress, m)
 		if err != nil {
 			log.Println(err)
+			return
 		}
 		r.Body.Close()
 	}

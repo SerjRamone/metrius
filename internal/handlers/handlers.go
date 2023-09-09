@@ -25,15 +25,7 @@ func Router(mS storage.MemStorage) chi.Router {
 	return r
 }
 
-// ComingSoon func
-func ComingSoon() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte("it's works"))
-	}
-}
-
-// List ...
+// List is handles / requests. Displays HTML-table with all current metrics values
 func List(s storage.Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const tmpl = `<html>
@@ -73,7 +65,11 @@ func List(s storage.Storage) http.HandlerFunc {
 
 		w.Header().Add("Content-Type", "text/html; charset=utf-8")
 		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write(buf.Bytes())
+		_, err = w.Write(buf.Bytes())
+		if err != nil {
+			log.Println("can't write response:", err)
+			http.Error(w, "internal server error", http.StatusInternalServerError)
+		}
 	}
 }
 
@@ -106,7 +102,11 @@ func Value(s storage.Storage) http.HandlerFunc {
 			return
 		}
 
-		_, _ = w.Write([]byte(mValue))
+		_, err := w.Write([]byte(mValue))
+		if err != nil {
+			log.Println("can't write response:", err)
+			http.Error(w, "internal server error", http.StatusInternalServerError)
+		}
 	}
 }
 
@@ -168,6 +168,10 @@ func Update(s storage.Storage) http.HandlerFunc {
 			}
 		}
 
-		_, _ = w.Write([]byte("OK"))
+		_, err := w.Write([]byte("OK"))
+		if err != nil {
+			log.Println("can't write response:", err)
+			http.Error(w, "internal server error", http.StatusInternalServerError)
+		}
 	}
 }

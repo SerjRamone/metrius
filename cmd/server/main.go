@@ -2,6 +2,7 @@
 package main
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/SerjRamone/metrius/internal/handlers"
@@ -15,7 +16,9 @@ func main() {
 }
 
 func run() error {
+	parseFlags()
+	log.Printf("server started on address: %v\n", address)
 	mStorage := storage.New()
 
-	return http.ListenAndServe(":8080", handlers.Router(mStorage))
+	return http.ListenAndServe(address, handlers.Router(mStorage))
 }

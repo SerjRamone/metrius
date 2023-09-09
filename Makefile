@@ -6,17 +6,17 @@ build-server:
 build-agent:
 	go build -o cmd/agent/agent cmd/agent/*.go
 
-run-server:
-	go run cmd/server/main.go
+run-server: build-server
+	./cmd/server/server -a="localhost:8080"
 
-run-agent:
-	go run cmd/agent/main.go
+run-agent: build-agent
+	./cmd/agent/agent -a="localhost:8080" -r=10 -p=2
 
 stattest:
 	go vet -vettool=statictest ./...
 	
-autotests: build autotests3
-	./metricstest
+autotests: build autotests4
+	# ./metricstest
 	
 autotests1:
 	./metricstest -test.v -test.run=^TestIteration1$$ -agent-binary-path=cmd/agent/agent -binary-path=cmd/server/server
@@ -27,3 +27,5 @@ autotests2: autotests1
 autotests3: autotests2
 	./metricstest -test.v -test.run=^TestIteration3[AB]*$$ -source-path=. -agent-binary-path=cmd/agent/agent -binary-path=cmd/server/server
 
+autotests4: autotests3 
+	./metricstest -test.v -test.run=^TestIteration4$$ -source-path=. -agent-binary-path=cmd/agent/agent -binary-path=cmd/server/server -server-port="8008"

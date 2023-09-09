@@ -3,7 +3,6 @@ package storage
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/SerjRamone/metrius/internal/metrics"
 )
@@ -18,7 +17,6 @@ type Storage interface {
 	SetCounter(string, metrics.Counter) error
 	Counter(string) (metrics.Counter, bool)
 	Counters() map[string]metrics.Counter
-	String() string
 }
 
 // MemStorage is a in-memory storage
@@ -73,13 +71,4 @@ func (s MemStorage) Gauges() map[string]metrics.Gauge {
 // Counters returns map of all setted gauges
 func (s MemStorage) Counters() map[string]metrics.Counter {
 	return s.counters
-}
-
-// String returns data as string
-func (s MemStorage) String() string {
-	r := "Counters: \r\n"
-	r += fmt.Sprintf("%v", s.counters) + "\r\n"
-	r += "Gauges: \r\n"
-	r += fmt.Sprintf("%v", s.gauges) + "\r\n"
-	return r
 }
