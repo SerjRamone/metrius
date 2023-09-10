@@ -20,8 +20,8 @@ var (
 	pollInterval   int
 )
 
-// parse flags and envs
-func parse() {
+// parseConfig flags and envs
+func parseConfig() {
 	config := struct {
 		ServerAddress  string `env:"ADDRESS"`
 		ReportInterval int    `env:"REPORT_INTERVAL"`

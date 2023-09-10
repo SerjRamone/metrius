@@ -16,7 +16,6 @@ stattest:
 	go vet -vettool=statictest ./...
 	
 autotests: build autotests5
-	# ./metricstest
 	
 autotests1:
 	./metricstest -test.v -test.run=^TestIteration1$$ -agent-binary-path=cmd/agent/agent -binary-path=cmd/server/server

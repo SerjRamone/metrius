@@ -13,8 +13,8 @@ const defaultAddress = "localhost:8080"
 // address and port to run the server
 var address string
 
-// parse flags and envs
-func parse() {
+// parseConfig flags and envs
+func parseConfig() {
 	config := struct {
 		Address string `env:"ADDRESS"`
 	}{}

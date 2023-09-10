@@ -21,7 +21,7 @@ var (
 
 func main() {
 	// parse flags and envs
-	parse()
+	parseConfig()
 
 	collections = make(map[int64]metrics.Collection, 4)
 	memStat = runtime.MemStats{}
