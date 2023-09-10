@@ -1,7 +1,8 @@
-// Package main ...
+// Package main is agent main package
 package main
 
 import (
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -11,21 +12,30 @@ import (
 	"github.com/SerjRamone/metrius/internal/metrics"
 )
 
+var (
+	reportedAt  time.Time
+	polledAt    time.Time
+	memStat     runtime.MemStats
+	collections map[int64]metrics.Collection
+)
+
 func main() {
-	parseFlags()
-	collections := make(map[int64]metrics.Collection, 4)
-	m := runtime.MemStats{}
-	reportedAt := time.Now()
-	polledAt := time.Now()
+	// parse flags and envs
+	parse()
+
+	collections = make(map[int64]metrics.Collection, 4)
+	memStat = runtime.MemStats{}
+	reportedAt = time.Now()
+	polledAt = time.Now()
 
 	for {
 		// collect metrics
 		if seconds := int((time.Since(polledAt)).Seconds()); seconds >= pollInterval {
 			// getting metrics from runtime
-			runtime.ReadMemStats(&m)
+			runtime.ReadMemStats(&memStat)
 
 			// add metrics to collection
-			c := metrics.NewCollection(m)
+			c := metrics.NewCollection(memStat)
 			collections[time.Now().UnixMicro()] = c
 			log.Println("🗄  metrics added. Collections.len() is: ", len(collections))
 
@@ -64,7 +74,7 @@ func postCollection(c metrics.Collection) {
 
 // single request
 func postMetrics(sURL string, m map[string]string) (*http.Response, error) {
-	url := sURL + "/update/" + m["type"] + "/" + m["name"] + "/" + m["value"]
+	url := fmt.Sprintf("%s/update/%s/%s/%s", sURL, m["type"], m["name"], m["value"])
 	r, err := http.Post(url, "text/plain", nil)
 	if err != nil {
 		return nil, err

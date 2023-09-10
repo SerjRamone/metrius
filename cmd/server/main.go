@@ -16,7 +16,7 @@ func main() {
 }
 
 func run() error {
-	parseFlags()
+	parse()
 	log.Printf("server started on address: %v\n", address)
 	mStorage := storage.New()
 
