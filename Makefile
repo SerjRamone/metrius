@@ -30,5 +30,5 @@ autotests3: autotests2
 autotests4: autotests3 
 	./metricstest -test.v -test.run=^TestIteration4$$ -source-path=. -agent-binary-path=cmd/agent/agent -binary-path=cmd/server/server -server-port="8008"
 
-autotests5: #autotests4
+autotests5: autotests4
 	./metricstest -test.v -test.run=^TestIteration5$$ -source-path=. -agent-binary-path=cmd/agent/agent -binary-path=cmd/server/server -server-port="8008"
