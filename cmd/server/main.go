@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/SerjRamone/metrius/internal/config"
 	"github.com/SerjRamone/metrius/internal/handlers"
 	"github.com/SerjRamone/metrius/internal/storage"
 )
@@ -16,9 +17,15 @@ func main() {
 }
 
 func run() error {
-	parseConfig()
-	log.Printf("server started on address: %v\n", address)
+	conf := config.Server{}
+	conf.ParseFlags()
+	err := conf.ParseEnv()
+	if err != nil {
+		log.Fatal("config parse error", err)
+	}
+	log.Printf("Loaded server config: %+v\n", conf)
+
 	mStorage := storage.New()
 
-	return http.ListenAndServe(address, handlers.Router(mStorage))
+	return http.ListenAndServe(conf.Address, handlers.Router(mStorage))
 }

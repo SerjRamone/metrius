@@ -9,6 +9,7 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/SerjRamone/metrius/internal/config"
 	"github.com/SerjRamone/metrius/internal/metrics"
 )
 
@@ -20,8 +21,13 @@ var (
 )
 
 func main() {
-	// parse flags and envs
-	parseConfig()
+	conf := config.Agent{}
+	conf.ParseFlags()
+	err := conf.ParseEnv()
+	if err != nil {
+		log.Fatal("config parse error: ", err)
+	}
+	log.Printf("Loaded agent config: %+v\n", conf)
 
 	collections = make(map[int64]metrics.Collection, 4)
 	memStat = runtime.MemStats{}
@@ -30,7 +36,7 @@ func main() {
 
 	for {
 		// collect metrics
-		if seconds := int((time.Since(polledAt)).Seconds()); seconds >= pollInterval {
+		if seconds := int((time.Since(polledAt)).Seconds()); seconds >= conf.PollInterval {
 			// getting metrics from runtime
 			runtime.ReadMemStats(&memStat)
 
@@ -43,10 +49,10 @@ func main() {
 		}
 
 		// send metrics
-		if seconds := int((time.Since(reportedAt)).Seconds()); seconds >= reportInterval {
+		if seconds := int((time.Since(reportedAt)).Seconds()); seconds >= conf.ReportInterval {
 			if len(collections) > 0 {
 				for k, c := range collections {
-					postCollection(c)
+					postCollection(conf.ServerAddress, c)
 					log.Println("📨  sended")
 					delete(collections, k)
 					time.Sleep(50 * time.Millisecond)
@@ -61,9 +67,9 @@ func main() {
 }
 
 // send whole Collection
-func postCollection(c metrics.Collection) {
+func postCollection(sURL string, c metrics.Collection) {
 	for _, m := range c {
-		r, err := postMetrics("http://"+serverAddress, m)
+		r, err := postMetrics("http://"+sURL, m)
 		if err != nil {
 			log.Println(err)
 			return
@@ -80,6 +86,7 @@ func postMetrics(sURL string, m map[string]string) (*http.Response, error) {
 		return nil, err
 	}
 	defer r.Body.Close()
+
 	_, err = io.Copy(io.Discard, r.Body)
 	if err != nil {
 		return nil, err
