@@ -10,20 +10,20 @@ import (
 	"github.com/SerjRamone/metrius/internal/metrics"
 )
 
-// MetricsSender ...
-type MetricsSender struct {
+// metricsSender ...
+type metricsSender struct {
 	sURL string
 }
 
 // NewMetricsSender crates MetricsSender
-func NewMetricsSender(sURL string) *MetricsSender {
-	return &MetricsSender{
+func NewMetricsSender(sURL string) *metricsSender {
+	return &metricsSender{
 		sURL: "http://" + sURL,
 	}
 }
 
 // Send whole Collection
-func (sender *MetricsSender) Send(collections map[int64]metrics.Collection) error {
+func (sender *metricsSender) Send(collections map[int64]metrics.Collection) error {
 	for k, c := range collections {
 
 		for _, m := range c {
@@ -43,7 +43,7 @@ func (sender *MetricsSender) Send(collections map[int64]metrics.Collection) erro
 }
 
 // single request
-func (sender *MetricsSender) sendMetrics(m map[string]string) (*http.Response, error) {
+func (sender *metricsSender) sendMetrics(m map[string]string) (*http.Response, error) {
 	url := fmt.Sprintf("%s/update/%s/%s/%s", sender.sURL, m["type"], m["name"], m["value"])
 	r, err := http.Post(url, "text/plain", nil)
 	if err != nil {

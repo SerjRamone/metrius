@@ -10,7 +10,7 @@ import (
 )
 
 // Update is a /update/ handler
-func (bHandler BaseHandler) Update() http.HandlerFunc {
+func (bHandler baseHandler) Update() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var (
 			mValue = chi.URLParam(r, "value")

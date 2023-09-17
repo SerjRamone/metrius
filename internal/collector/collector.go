@@ -8,20 +8,20 @@ import (
 	"github.com/SerjRamone/metrius/internal/metrics"
 )
 
-// Collector collect and store metrics
-type Collector struct {
+// collector collect and store metrics
+type collector struct {
 	collections map[int64]metrics.Collection
 }
 
 // NewCollector creates Collector instance
-func NewCollector() *Collector {
-	return &Collector{
+func New() *collector {
+	return &collector{
 		collections: make(map[int64]metrics.Collection),
 	}
 }
 
 // Collect collects metrics
-func (c Collector) Collect() {
+func (c collector) Collect() {
 	memStat := runtime.MemStats{}
 	// getting metrics from runtime
 	runtime.ReadMemStats(&memStat)
@@ -33,7 +33,7 @@ func (c Collector) Collect() {
 }
 
 // Export returns collections and lear map
-func (c *Collector) Export() map[int64]metrics.Collection {
+func (c *collector) Export() map[int64]metrics.Collection {
 	collections := c.collections
 	c.collections = make(map[int64]metrics.Collection)
 	return collections

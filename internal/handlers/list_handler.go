@@ -9,7 +9,7 @@ import (
 )
 
 // List handles / requests. Displays HTML-table with all current metrics values
-func (bHandler BaseHandler) List() http.HandlerFunc {
+func (bHandler baseHandler) List() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const tmpl = `<html>
 			<head><title>Metrius</title></head>

@@ -9,7 +9,7 @@ import (
 )
 
 // Value handler handls GET "/value/counter/foo" requests
-func (bHandler BaseHandler) Value() http.HandlerFunc {
+func (bHandler baseHandler) Value() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var (
 			mType  = chi.URLParam(r, "type")

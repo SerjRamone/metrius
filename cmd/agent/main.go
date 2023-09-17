@@ -5,30 +5,24 @@ import (
 	"log"
 	"time"
 
-	"github.com/SerjRamone/metrius/internal/collector"
+	collect "github.com/SerjRamone/metrius/internal/collector"
 	"github.com/SerjRamone/metrius/internal/config"
 	"github.com/SerjRamone/metrius/internal/sender"
 )
 
 func main() {
-	conf := config.Agent{}
-	conf.ParseFlags()
-	err := conf.ParseEnv()
+	conf, err := config.NewAgent()
 	if err != nil {
 		log.Fatal("config parse error: ", err)
 	}
 
 	log.Printf("Loaded agent config: %+v\n", conf)
 
-	start(conf)
-}
-
-func start(conf config.Agent) {
 	reportedAt := time.Now()
 	polledAt := time.Now()
 
 	sender := sender.NewMetricsSender(conf.ServerAddress)
-	collector := collector.NewCollector()
+	collector := collect.New()
 
 	for {
 		// collect metrics

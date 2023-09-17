@@ -17,11 +17,9 @@ func main() {
 }
 
 func run() error {
-	conf := config.Server{}
-	conf.ParseFlags()
-	err := conf.ParseEnv()
+	conf, err := config.NewServer()
 	if err != nil {
-		log.Fatal("config parse error", err)
+		log.Fatal("config parse error: ", err)
 	}
 	log.Printf("Loaded server config: %+v\n", conf)
 
