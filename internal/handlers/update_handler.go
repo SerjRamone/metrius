@@ -49,7 +49,7 @@ func (bHandler baseHandler) Update() http.HandlerFunc {
 				return
 			}
 
-			if err := bHandler.Storage.SetCounter(mName, metrics.Counter(c)); err != nil {
+			if err := bHandler.storage.SetCounter(mName, metrics.Counter(c)); err != nil {
 				log.Fatal("can't set counter", err)
 				return
 			}
@@ -61,7 +61,7 @@ func (bHandler baseHandler) Update() http.HandlerFunc {
 				return
 			}
 
-			if err := bHandler.Storage.SetGauge(mName, metrics.Gauge(g)); err != nil {
+			if err := bHandler.storage.SetGauge(mName, metrics.Gauge(g)); err != nil {
 				log.Fatal("can't set gauge", err)
 				return
 			}

@@ -19,14 +19,14 @@ func (bHandler baseHandler) Value() http.HandlerFunc {
 
 		switch mType {
 		case "gauge":
-			v, ok := bHandler.Storage.Gauge(mName)
+			v, ok := bHandler.storage.Gauge(mName)
 			if !ok {
 				http.Error(w, "not found", http.StatusNotFound)
 				return
 			}
 			mValue = fmt.Sprint(v)
 		case "counter":
-			v, ok := bHandler.Storage.Counter(mName)
+			v, ok := bHandler.storage.Counter(mName)
 			if !ok {
 				http.Error(w, "not found", http.StatusNotFound)
 				return

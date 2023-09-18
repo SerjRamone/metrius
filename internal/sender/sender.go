@@ -23,8 +23,8 @@ func NewMetricsSender(sURL string) *metricsSender {
 }
 
 // Send whole Collection
-func (sender *metricsSender) Send(collections map[int64]metrics.Collection) error {
-	for k, c := range collections {
+func (sender *metricsSender) Send(collections []metrics.Collection) error {
+	for _, c := range collections {
 
 		for _, m := range c {
 			r, err := sender.sendMetrics(m)
@@ -35,7 +35,6 @@ func (sender *metricsSender) Send(collections map[int64]metrics.Collection) erro
 			r.Body.Close()
 		}
 
-		delete(collections, k)
 		time.Sleep(50 * time.Millisecond)
 	}
 
@@ -43,8 +42,8 @@ func (sender *metricsSender) Send(collections map[int64]metrics.Collection) erro
 }
 
 // single request
-func (sender *metricsSender) sendMetrics(m map[string]string) (*http.Response, error) {
-	url := fmt.Sprintf("%s/update/%s/%s/%s", sender.sURL, m["type"], m["name"], m["value"])
+func (sender *metricsSender) sendMetrics(m metrics.CollectionItem) (*http.Response, error) {
+	url := fmt.Sprintf("%s/update/%s/%s/%f", sender.sURL, m.Variation, m.Name, m.Value)
 	r, err := http.Post(url, "text/plain", nil)
 	if err != nil {
 		return nil, err

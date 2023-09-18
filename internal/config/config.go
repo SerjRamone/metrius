@@ -21,22 +21,22 @@ const (
 	serverUsageAddress = "address and port to run server"
 )
 
-// agent contents config for Agent
-type agent struct {
+// Agent contents config for Agent
+type Agent struct {
 	ServerAddress  string `env:"ADDRESS"`
 	ReportInterval int    `env:"REPORT_INTERVAL"`
 	PollInterval   int    `env:"POLL_INTERVAL"`
 }
 
 // NewAgent constructor for agent config
-func NewAgent() (agent, error) {
-	a := agent{}
+func NewAgent() (Agent, error) {
+	a := Agent{}
 	a.parseFlags()
 	return a, a.parseEnv()
 }
 
 // parseFlags parse cli flags
-func (c *agent) parseFlags() {
+func (c *Agent) parseFlags() {
 	flag.StringVar(&c.ServerAddress, "a", agentDefaultServerAddress, agentUsageServerAddress)
 	flag.IntVar(&c.ReportInterval, "r", agentDefaultReportInterval, agentUsageReportInterval)
 	flag.IntVar(&c.PollInterval, "p", agentDefaultPollInterval, agentUsagePollInterval)
@@ -45,7 +45,7 @@ func (c *agent) parseFlags() {
 }
 
 // parseEnv parse environtment variables
-func (c *agent) parseEnv() error {
+func (c *Agent) parseEnv() error {
 	return env.Parse(c)
 }
 
@@ -54,7 +54,7 @@ type Server struct {
 	Address string `env:"ADDRESS"`
 }
 
-// NewAgent constructor for agent config
+// NewServer constructor for server config
 func NewServer() (Server, error) {
 	s := Server{}
 	s.parseFlags()

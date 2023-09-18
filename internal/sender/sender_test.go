@@ -6,7 +6,6 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"testing"
-	"time"
 
 	"github.com/SerjRamone/metrius/internal/metrics"
 	"github.com/stretchr/testify/assert"
@@ -14,7 +13,7 @@ import (
 
 func TestSend(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		assert.Equal(t, "/update/gauge/Alloc/134024", r.URL.String())
+		assert.Equal(t, "/update/gauge/Alloc/134024.000000", r.URL.String())
 
 		w.Header().Set("Content-Type", "text/plain")
 		w.WriteHeader(http.StatusOK)
@@ -22,15 +21,10 @@ func TestSend(t *testing.T) {
 	}))
 	defer server.Close()
 
-	collection := []map[string]string{
+	c := []metrics.Collection{
 		{
-			"name":  "Alloc",
-			"type":  "gauge",
-			"value": "134024",
+			metrics.CollectionItem{Name: "Alloc", Variation: "gauge", Value: 134024},
 		},
-	}
-	c := map[int64]metrics.Collection{
-		time.Now().UnixMicro(): collection,
 	}
 	u, err := url.Parse(server.URL)
 	if err != nil {
