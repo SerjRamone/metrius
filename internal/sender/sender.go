@@ -43,7 +43,7 @@ func (sender *metricsSender) Send(collections []metrics.Collection) error {
 
 // single request
 func (sender *metricsSender) sendMetrics(m metrics.CollectionItem) (*http.Response, error) {
-	url := fmt.Sprintf("%s/update/%s/%s/%f", sender.sURL, m.Variation, m.Name, m.Value)
+	url := fmt.Sprintf("%s/update/%s/%s/%f", sender.sURL, m.Type, m.Name, m.Value)
 	r, err := http.Post(url, "text/plain", nil)
 	if err != nil {
 		return nil, err

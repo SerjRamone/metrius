@@ -43,7 +43,7 @@ func (bHandler baseHandler) Update() http.HandlerFunc {
 
 		switch mType {
 		case "counter":
-			c, err := strconv.ParseInt(mValue, 10, 64)
+			c, err := strconv.ParseFloat(mValue, 64)
 			if err != nil {
 				http.Error(w, "Invalid metrics value", http.StatusBadRequest)
 				return

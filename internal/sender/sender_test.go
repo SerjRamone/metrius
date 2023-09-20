@@ -23,7 +23,7 @@ func TestSend(t *testing.T) {
 
 	c := []metrics.Collection{
 		{
-			metrics.CollectionItem{Name: "Alloc", Variation: "gauge", Value: 134024},
+			metrics.CollectionItem{Name: "Alloc", Type: "gauge", Value: 134024},
 		},
 	}
 	u, err := url.Parse(server.URL)
