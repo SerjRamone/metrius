@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"github.com/SerjRamone/metrius/internal/logger"
 	"github.com/SerjRamone/metrius/internal/storage"
 	"github.com/go-chi/chi/v5"
 )
@@ -9,6 +10,8 @@ import (
 func Router(mS storage.MemStorage) chi.Router {
 	r := chi.NewRouter()
 	bHandler := NewBaseHandler(mS)
+
+	r.Use(logger.RequestLogger)
 
 	r.Get("/", bHandler.List())
 	r.Get("/value/{type}/{name}", bHandler.Value())

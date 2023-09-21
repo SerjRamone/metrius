@@ -67,6 +67,7 @@ func (bHandler baseHandler) Update() http.HandlerFunc {
 			}
 		}
 
+		w.WriteHeader(http.StatusOK)
 		_, err := w.Write([]byte("OK"))
 		if err != nil {
 			log.Println("can't write response:", err)

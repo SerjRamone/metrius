@@ -2,12 +2,13 @@
 package main
 
 import (
-	"log"
 	"net/http"
 
 	"github.com/SerjRamone/metrius/internal/config"
 	"github.com/SerjRamone/metrius/internal/handlers"
+	"github.com/SerjRamone/metrius/internal/logger"
 	"github.com/SerjRamone/metrius/internal/storage"
+	"go.uber.org/zap"
 )
 
 func main() {
@@ -18,10 +19,15 @@ func main() {
 
 func run() error {
 	conf, err := config.NewServer()
-	if err != nil {
-		log.Fatal("config parse error: ", err)
+
+	flagLogLevel := "info"
+	if err := logger.Init(flagLogLevel); err != nil {
+		return err
 	}
-	log.Printf("Loaded server config: %+v\n", conf)
+
+	if err != nil {
+		logger.Log.Fatal("config parse error: ", zap.Error(err))
+	}
 
 	mStorage := storage.New()
 
