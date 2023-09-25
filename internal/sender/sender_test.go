@@ -1,6 +1,7 @@
 package sender
 
 import (
+	"io"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -13,9 +14,12 @@ import (
 
 func TestSend(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		assert.Equal(t, "/update/gauge/Alloc/134024.000000", r.URL.String())
+		assert.Equal(t, "/update/", r.URL.String())
 
-		w.Header().Set("Content-Type", "text/plain")
+		body, _ := io.ReadAll(r.Body)
+		assert.Equal(t, `{"id":"Alloc","type":"gauge","value":134024}`, string(body))
+
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("OK\n"))
 	}))
