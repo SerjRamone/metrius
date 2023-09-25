@@ -2,8 +2,11 @@
 package sender
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"time"
 
@@ -43,8 +46,27 @@ func (sender *metricsSender) Send(collections []metrics.Collection) error {
 
 // single request
 func (sender *metricsSender) sendMetrics(m metrics.CollectionItem) (*http.Response, error) {
-	url := fmt.Sprintf("%s/update/%s/%s/%f", sender.sURL, m.Type, m.Name, m.Value)
-	r, err := http.Post(url, "text/plain", nil)
+	url := fmt.Sprintf("%s/update/", sender.sURL)
+
+	item := metrics.Metrics{
+		ID:    m.Name,
+		MType: m.Type,
+	}
+
+	switch m.Type {
+	case "gauge":
+		item.Value = &m.Value
+	case "counter":
+		tmp := int64(m.Value)
+		item.Delta = &tmp
+	}
+
+	data, err := json.Marshal(item)
+	if err != nil {
+		log.Println("metrics encode error", err)
+	}
+
+	r, err := http.Post(url, "application/json", bytes.NewBuffer(data))
 	if err != nil {
 		return nil, err
 	}

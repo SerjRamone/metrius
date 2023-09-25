@@ -14,7 +14,11 @@ func Router(mS storage.MemStorage) chi.Router {
 	r.Use(logger.RequestLogger)
 
 	r.Get("/", bHandler.List())
+
+	r.Post("/value/", bHandler.ValueJSON())
 	r.Get("/value/{type}/{name}", bHandler.Value())
+
+	r.Post("/update/", bHandler.UpdateJSON())
 	r.Post("/update/{type}/{name}/{value}", bHandler.Update())
 
 	return r

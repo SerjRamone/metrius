@@ -1,12 +1,16 @@
 package handlers
 
 import (
+	"encoding/json"
+	"io"
 	"log"
 	"net/http"
 	"strconv"
 
+	"github.com/SerjRamone/metrius/internal/logger"
 	"github.com/SerjRamone/metrius/internal/metrics"
 	"github.com/go-chi/chi/v5"
+	"go.uber.org/zap"
 )
 
 // Update is a /update/ handler
@@ -23,8 +27,6 @@ func (bHandler baseHandler) Update() http.HandlerFunc {
 		// 	http.Error(w, "Bad content-type", http.StatusBadRequest)
 		// 	return
 		// }
-
-		log.Println("📨  ", r.Method, r.URL.Path)
 
 		if mName == "" {
 			http.Error(w, "Metrics name not set", http.StatusNotFound)
@@ -71,6 +73,86 @@ func (bHandler baseHandler) Update() http.HandlerFunc {
 		_, err := w.Write([]byte("OK"))
 		if err != nil {
 			log.Println("can't write response:", err)
+			http.Error(w, "internal server error", http.StatusInternalServerError)
+		}
+	}
+}
+
+// Update is a /update/ handler with JSON body
+func (bHandler baseHandler) UpdateJSON() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Add("Accept", "application/json")
+		w.Header().Add("Content-Type", "application/json")
+
+		if r.Header.Get("Content-Type") != "application/json" {
+			http.Error(w, "Bad content-type", http.StatusBadRequest)
+			return
+		}
+
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			logger.Log.Info("request body reading error", zap.Error(err))
+			http.Error(w, "Request body reading error", http.StatusBadRequest)
+			return
+		}
+
+		var req metrics.Metrics
+		if err := json.Unmarshal(body, &req); err != nil {
+			logger.Log.Info("cannot decode request JSON body", zap.Error(err))
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		if req.ID == "" {
+			http.Error(w, "Metrics name not set", http.StatusNotFound)
+			return
+		}
+
+		if req.MType != "counter" && req.MType != "gauge" {
+			http.Error(w, "Metrics type not set or unknown", http.StatusBadRequest)
+			return
+		}
+
+		if (req.MType == "gauge" && req.Value == nil) || (req.MType == "counter" && req.Delta == nil) {
+			http.Error(w, "Metrics value not set or invalid", http.StatusBadRequest)
+			return
+		}
+
+		switch req.MType {
+		case "counter":
+			if err := bHandler.storage.SetCounter(req.ID, metrics.Counter(*req.Delta)); err != nil {
+				logger.Log.Fatal("can't set counter", zap.Error(err))
+				return
+			}
+			// set new value for response
+			newValue, ok := bHandler.storage.Counter(req.ID)
+			if !ok {
+				logger.Log.Info("can't get new value of counter",
+					zap.String("req.ID", req.ID),
+					zap.Int64("rec.Delta", *req.Delta),
+				)
+			}
+			intValue := int64(newValue)
+			req.Delta = &intValue
+
+		case "gauge":
+			if err := bHandler.storage.SetGauge(req.ID, metrics.Gauge(*req.Value)); err != nil {
+				logger.Log.Fatal("can't set gauge", zap.Error(err))
+				return
+			}
+		}
+
+		bytes, err := json.Marshal(req)
+		if err != nil {
+			logger.Log.Error("Metrics marshalling error", zap.Error(err))
+			http.Error(w, "internal server error", http.StatusInternalServerError)
+		}
+
+		w.WriteHeader(http.StatusOK)
+		w.Header().Add("Content-Type", "application/json")
+		_, err = w.Write(bytes)
+		if err != nil {
+			logger.Log.Error("can't write response:", zap.Error(err))
 			http.Error(w, "internal server error", http.StatusInternalServerError)
 		}
 	}
