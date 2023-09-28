@@ -24,6 +24,9 @@ func testRequest(
 	req, err := http.NewRequest(method, ts.URL+path, body)
 	require.NoError(t, err)
 
+	// do uncompressed requests
+	req.Header.Set("Accept-Encoding", "identity")
+
 	if contentType != "" {
 		req.Header.Set("Content-Type", contentType)
 	}

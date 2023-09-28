@@ -1,6 +1,7 @@
 package sender
 
 import (
+	"compress/gzip"
 	"io"
 	"log"
 	"net/http"
@@ -15,12 +16,18 @@ import (
 func TestSend(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, "/update/", r.URL.String())
+		assert.Equal(t, "gzip", r.Header.Get("Content-Encoding"))
 
-		body, _ := io.ReadAll(r.Body)
+		gr, err := gzip.NewReader(r.Body)
+		assert.NoError(t, err)
+		defer gr.Close()
+
+		body, _ := io.ReadAll(gr)
 		assert.Equal(t, `{"id":"Alloc","type":"gauge","value":134024}`, string(body))
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
+		// @todo json response
 		_, _ = w.Write([]byte("OK\n"))
 	}))
 	defer server.Close()

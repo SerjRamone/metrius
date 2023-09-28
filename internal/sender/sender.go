@@ -3,6 +3,7 @@ package sender
 
 import (
 	"bytes"
+	"compress/gzip"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -66,7 +67,23 @@ func (sender *metricsSender) sendMetrics(m metrics.CollectionItem) (*http.Respon
 		log.Println("metrics encode error", err)
 	}
 
-	r, err := http.Post(url, "application/json", bytes.NewBuffer(data))
+	var b bytes.Buffer
+	gw := gzip.NewWriter(&b)
+	if _, err = gw.Write(data); err != nil {
+		return nil, err
+	}
+	if err = gw.Close(); err != nil {
+		return nil, err
+	}
+	req, err := http.NewRequest("POST", url, &b)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Content-Encoding", "gzip")
+	if err != nil {
+		return nil, err
+	}
+
+	client := &http.Client{}
+	r, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}

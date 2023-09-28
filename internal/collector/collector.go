@@ -2,9 +2,9 @@
 package collector
 
 import (
-	"log"
 	"runtime"
 
+	"github.com/SerjRamone/metrius/internal/logger"
 	"github.com/SerjRamone/metrius/internal/metrics"
 )
 
@@ -29,7 +29,7 @@ func (c *collector) Collect() {
 	// add metrics to collection
 	collection := metrics.NewCollection(memStat)
 	c.collections = append(c.collections, collection)
-	log.Println("🗄  metrics added. len(Collector.collections) is: ", len(c.collections))
+	logger.Log.Info("metrics added")
 }
 
 // Export returns collections and clear slice
