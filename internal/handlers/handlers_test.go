@@ -4,6 +4,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 
@@ -41,7 +42,8 @@ func testRequest(
 }
 
 func TestRouter(t *testing.T) {
-	m := storage.New()
+	f, _ := os.CreateTemp(os.TempDir(), "")
+	m := storage.New(300, f)
 	_ = m.SetCounter("foo", 1)
 
 	ts := httptest.NewServer(Router(m))
