@@ -12,14 +12,13 @@ func Router(mS storage.MemStorage) chi.Router {
 	bHandler := NewBaseHandler(mS)
 
 	r.Use(middlewares.RequestLogger)
-	r.Use(middlewares.GzipCompressor)
 
-	r.Get("/", bHandler.List())
+	r.Get("/", middlewares.GzipCompressor(bHandler.List()))
 
-	r.Post("/value/", bHandler.ValueJSON())
+	r.Post("/value/", middlewares.GzipCompressor(bHandler.ValueJSON()))
+	r.Post("/update/", middlewares.GzipCompressor(bHandler.UpdateJSON()))
+
 	r.Get("/value/{type}/{name}", bHandler.Value())
-
-	r.Post("/update/", bHandler.UpdateJSON())
 	r.Post("/update/{type}/{name}/{value}", bHandler.Update())
 
 	return r

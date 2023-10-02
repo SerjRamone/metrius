@@ -30,7 +30,6 @@ func (c *compressWriter) Write(p []byte) (int, error) {
 }
 
 func (c *compressWriter) WriteHeader(statusCode int) {
-	// c.w.Header().Set("Content-Encoding", "gzip")
 	if statusCode < 300 {
 		c.w.Header().Set("Content-Encoding", "gzip")
 	}
@@ -72,8 +71,8 @@ func (c *compressReader) Close() error {
 }
 
 // GzipCompressor compress middleware
-func GzipCompressor(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func GzipCompressor(next http.Handler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 		// set original http.ResponseWriter as default for next handler
 		ow := w
 
@@ -105,5 +104,5 @@ func GzipCompressor(next http.Handler) http.Handler {
 		}
 
 		next.ServeHTTP(ow, r)
-	})
+	}
 }
