@@ -7,8 +7,8 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/SerjRamone/metrius/internal/logger"
 	"github.com/SerjRamone/metrius/internal/metrics"
+	"github.com/SerjRamone/metrius/pkg/logger"
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
 )
@@ -64,14 +64,14 @@ func (bHandler baseHandler) ValueJSON() http.HandlerFunc {
 
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
-			logger.Log.Info("request body reading error", zap.Error(err))
+			logger.Info("request body reading error", zap.Error(err))
 			http.Error(w, "Request body reading error", http.StatusBadRequest)
 			return
 		}
 
 		var req metrics.Metrics
 		if err := json.Unmarshal(body, &req); err != nil {
-			logger.Log.Info("cannot decode request JSON body", zap.Error(err))
+			logger.Info("cannot decode request JSON body", zap.Error(err))
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
@@ -100,7 +100,7 @@ func (bHandler baseHandler) ValueJSON() http.HandlerFunc {
 
 		bytes, err := json.Marshal(req)
 		if err != nil {
-			logger.Log.Error("Metrics marshalling error", zap.Error(err))
+			logger.Error("Metrics marshalling error", zap.Error(err))
 			http.Error(w, "internal server error", http.StatusInternalServerError)
 		}
 
@@ -108,7 +108,7 @@ func (bHandler baseHandler) ValueJSON() http.HandlerFunc {
 		w.Header().Add("Content-Type", "application/json")
 		_, err = w.Write(bytes)
 		if err != nil {
-			logger.Log.Error("can't write response:", zap.Error(err))
+			logger.Error("can't write response:", zap.Error(err))
 			http.Error(w, "internal server error", http.StatusInternalServerError)
 		}
 	}

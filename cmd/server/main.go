@@ -11,8 +11,8 @@ import (
 
 	"github.com/SerjRamone/metrius/internal/config"
 	"github.com/SerjRamone/metrius/internal/handlers"
-	"github.com/SerjRamone/metrius/internal/logger"
 	"github.com/SerjRamone/metrius/internal/storage"
+	"github.com/SerjRamone/metrius/pkg/logger"
 	"go.uber.org/zap"
 )
 
@@ -31,7 +31,7 @@ func run() error {
 	}
 
 	if err != nil {
-		logger.Log.Fatal("config parse error: ", zap.Error(err))
+		logger.Fatal("config parse error: ", zap.Error(err))
 	}
 
 	backupFile, err := os.OpenFile(conf.FileStoragePath, os.O_RDWR|os.O_CREATE, 0666)
@@ -55,20 +55,20 @@ func run() error {
 
 	if conf.Restore {
 		if err := mStorage.Restore(); err != nil {
-			logger.Log.Error("can't restore from file", zap.Error(err))
+			logger.Error("can't restore from file", zap.Error(err))
 			cancel()
 		}
 	}
 
 	if conf.StoreInterval != 0 {
 		go func() {
-			logger.Log.Info("backuper started", zap.Int("StoreInterval", conf.StoreInterval))
+			logger.Info("backuper started", zap.Int("StoreInterval", conf.StoreInterval))
 			storedAt := time.Now()
 			for {
 				seconds := int((time.Since(storedAt)).Seconds())
 				if seconds >= conf.StoreInterval {
 					if err := mStorage.Backup(); err != nil {
-						logger.Log.Error("backup error", zap.Error(err))
+						logger.Error("backup error", zap.Error(err))
 					}
 					storedAt = time.Now()
 				}
@@ -79,9 +79,9 @@ func run() error {
 	}
 
 	go func() {
-		logger.Log.Info("starting server...")
+		logger.Info("starting server...")
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			logger.Log.Error("server start error", zap.Error(err))
+			logger.Error("server start error", zap.Error(err))
 			cancel()
 		}
 	}()
@@ -89,7 +89,7 @@ func run() error {
 	// waiting signals or context done
 	select {
 	case <-sigCh:
-		logger.Log.Info("shutting down")
+		logger.Info("shutting down")
 
 		timeout := 3 * time.Second
 		ctx, cancel := context.WithTimeout(ctx, timeout)
@@ -97,23 +97,23 @@ func run() error {
 
 		// shutting down server
 		if err := server.Shutdown(ctx); err != nil {
-			logger.Log.Error("server shutting down error", zap.Error(err))
+			logger.Error("server shutting down error", zap.Error(err))
 		} else {
-			logger.Log.Info("server shut down gracefully")
+			logger.Info("server shut down gracefully")
 		}
 
 		// backup metrics
 		if err := mStorage.Backup(); err != nil {
-			logger.Log.Error("backup error", zap.Error(err))
+			logger.Error("backup error", zap.Error(err))
 		}
 
 		// close resources
 		if err := backupFile.Close(); err != nil {
-			logger.Log.Error("backup file close error", zap.Error(err))
+			logger.Error("backup file close error", zap.Error(err))
 		}
 
 	case <-ctx.Done():
-		logger.Log.Error("context error", zap.Error(ctx.Err()))
+		logger.Error("context error", zap.Error(ctx.Err()))
 		return err
 	}
 

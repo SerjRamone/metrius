@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/SerjRamone/metrius/internal/logger"
 	"github.com/SerjRamone/metrius/internal/metrics"
+	"github.com/SerjRamone/metrius/pkg/logger"
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
 )
@@ -91,14 +91,14 @@ func (bHandler baseHandler) UpdateJSON() http.HandlerFunc {
 
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
-			logger.Log.Info("request body reading error", zap.Error(err))
+			logger.Info("request body reading error", zap.Error(err))
 			http.Error(w, "Request body reading error", http.StatusBadRequest)
 			return
 		}
 
 		var req metrics.Metrics
 		if err := json.Unmarshal(body, &req); err != nil {
-			logger.Log.Info("cannot decode request JSON body", zap.Error(err))
+			logger.Info("cannot decode request JSON body", zap.Error(err))
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
@@ -121,13 +121,13 @@ func (bHandler baseHandler) UpdateJSON() http.HandlerFunc {
 		switch req.MType {
 		case "counter":
 			if err := bHandler.storage.SetCounter(req.ID, metrics.Counter(*req.Delta)); err != nil {
-				logger.Log.Fatal("can't set counter", zap.Error(err))
+				logger.Fatal("can't set counter", zap.Error(err))
 				return
 			}
 			// set new value for response
 			newValue, ok := bHandler.storage.Counter(req.ID)
 			if !ok {
-				logger.Log.Info("can't get new value of counter",
+				logger.Info("can't get new value of counter",
 					zap.String("req.ID", req.ID),
 					zap.Int64("rec.Delta", *req.Delta),
 				)
@@ -137,14 +137,14 @@ func (bHandler baseHandler) UpdateJSON() http.HandlerFunc {
 
 		case "gauge":
 			if err := bHandler.storage.SetGauge(req.ID, metrics.Gauge(*req.Value)); err != nil {
-				logger.Log.Fatal("can't set gauge", zap.Error(err))
+				logger.Fatal("can't set gauge", zap.Error(err))
 				return
 			}
 		}
 
 		bytes, err := json.Marshal(req)
 		if err != nil {
-			logger.Log.Error("Metrics marshalling error", zap.Error(err))
+			logger.Error("Metrics marshalling error", zap.Error(err))
 			http.Error(w, "internal server error", http.StatusInternalServerError)
 		}
 
@@ -152,7 +152,7 @@ func (bHandler baseHandler) UpdateJSON() http.HandlerFunc {
 		w.Header().Add("Content-Type", "application/json")
 		_, err = w.Write(bytes)
 		if err != nil {
-			logger.Log.Error("can't write response:", zap.Error(err))
+			logger.Error("can't write response:", zap.Error(err))
 			http.Error(w, "internal server error", http.StatusInternalServerError)
 		}
 	}

@@ -7,8 +7,8 @@ import (
 	"io"
 	"os"
 
-	"github.com/SerjRamone/metrius/internal/logger"
 	"github.com/SerjRamone/metrius/internal/metrics"
+	"github.com/SerjRamone/metrius/pkg/logger"
 	"go.uber.org/zap"
 )
 
@@ -47,15 +47,27 @@ func New(storeInterval int, backupFile *os.File) MemStorage {
 // Backup ...
 func (s MemStorage) Backup() error {
 	var structs []metrics.Metrics
-	// cleare file content
+	// clear file content
 	if _, err := s.backupFile.Seek(0, 0); err != nil {
-		logger.Log.Info("seek file error")
+		logger.Info("seek file error")
 	}
 	if err := s.backupFile.Truncate(0); err != nil {
-		logger.Log.Info("truncate backup file error")
+		logger.Info("truncate backup file error")
 		return err
 	}
-	for mName, mValue := range s.Gauges() {
+
+	// make local copies of maps
+	// @todo mutex in future
+	gauges := make(map[string]metrics.Gauge)
+	counters := make(map[string]metrics.Counter)
+	for k, v := range s.Gauges() {
+		gauges[k] = v
+	}
+	for k, v := range s.Counters() {
+		counters[k] = v
+	}
+
+	for mName, mValue := range gauges {
 		fValue := float64(mValue)
 		structs = append(structs, metrics.Metrics{
 			ID:    mName,
@@ -63,7 +75,8 @@ func (s MemStorage) Backup() error {
 			Value: &fValue,
 		})
 	}
-	for mName, mValue := range s.Counters() {
+
+	for mName, mValue := range counters {
 		iValue := int64(mValue)
 		structs = append(structs, metrics.Metrics{
 			ID:    mName,
@@ -71,15 +84,18 @@ func (s MemStorage) Backup() error {
 			Delta: &iValue,
 		})
 	}
+
 	bytes, err := json.Marshal(structs)
 	if err != nil {
 		return err
 	}
+
 	_, err = s.backupFile.WriteString(string(bytes))
 	if err != nil {
 		return err
 	}
-	logger.Log.Info("backuped", zap.Int("values count", len(structs)))
+
+	logger.Info("backuped", zap.Int("values count", len(structs)))
 	return nil
 }
 
@@ -98,7 +114,7 @@ func (s MemStorage) Restore() error {
 			s.counters[v.ID] = metrics.Counter(*v.Delta)
 		}
 	}
-	logger.Log.Info("success restored", zap.Int("metrics count", len(structs)))
+	logger.Info("success restored", zap.Int("metrics count", len(structs)))
 	return nil
 }
 

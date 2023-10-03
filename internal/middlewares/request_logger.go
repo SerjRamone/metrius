@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/SerjRamone/metrius/internal/logger"
+	"github.com/SerjRamone/metrius/pkg/logger"
 	"go.uber.org/zap"
 )
 
@@ -57,7 +57,7 @@ func RequestLogger(next http.Handler) http.Handler {
 		// get request duration
 		duration := time.Since(start)
 
-		logger.Log.Info("handle request",
+		logger.Info("handle request",
 			zap.String("uri", r.RequestURI),
 			zap.String("method", r.Method),
 			zap.Int("status", responseData.status),

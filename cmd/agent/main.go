@@ -7,8 +7,8 @@ import (
 
 	collect "github.com/SerjRamone/metrius/internal/collector"
 	"github.com/SerjRamone/metrius/internal/config"
-	"github.com/SerjRamone/metrius/internal/logger"
 	"github.com/SerjRamone/metrius/internal/sender"
+	"github.com/SerjRamone/metrius/pkg/logger"
 	"go.uber.org/zap"
 )
 
@@ -42,7 +42,7 @@ func main() {
 			if collections := collector.Export(); len(collections) > 0 {
 				err := sender.Send(collections)
 				if err != nil {
-					logger.Log.Error("sender error", zap.Error(err))
+					logger.Error("sender error", zap.Error(err))
 				}
 			}
 
