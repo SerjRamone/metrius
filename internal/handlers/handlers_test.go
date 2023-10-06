@@ -4,6 +4,8 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"strings"
 	"testing"
 
 	"github.com/SerjRamone/metrius/internal/storage"
@@ -12,12 +14,23 @@ import (
 )
 
 // @todo mayby content-type check
-func testRequest(t *testing.T, ts *httptest.Server, method,
+func testRequest(
+	t *testing.T,
+	ts *httptest.Server,
+	method,
 	path string,
+	body io.Reader,
+	contentType string,
 ) (*http.Response, string) {
-	req, err := http.NewRequest(method, ts.URL+path, nil)
+	req, err := http.NewRequest(method, ts.URL+path, body)
 	require.NoError(t, err)
 
+	// do uncompressed requests
+	req.Header.Set("Accept-Encoding", "identity")
+
+	if contentType != "" {
+		req.Header.Set("Content-Type", contentType)
+	}
 	resp, err := ts.Client().Do(req)
 	require.NoError(t, err)
 	defer resp.Body.Close()
@@ -29,7 +42,8 @@ func testRequest(t *testing.T, ts *httptest.Server, method,
 }
 
 func TestRouter(t *testing.T) {
-	m := storage.New()
+	f, _ := os.CreateTemp(os.TempDir(), "")
+	m := storage.New(300, f)
 	_ = m.SetCounter("foo", 1)
 
 	ts := httptest.NewServer(Router(m))
@@ -46,6 +60,7 @@ func TestRouter(t *testing.T) {
 		method      string
 		urlPath     string
 		contentType string
+		body        string
 	}{
 		{
 			name: "test #1 - 200 OK",
@@ -65,26 +80,6 @@ func TestRouter(t *testing.T) {
 			},
 			method:      http.MethodGet,
 			urlPath:     "/update/counter/someMetric/527",
-			contentType: "text/plain",
-		},
-		// {
-		// 	name: "test #3 - Bad Content-Type",
-		// 	want: want{
-		// 		statusCode:   http.StatusBadRequest,
-		// 		responseText: "Bad content-type\n",
-		// 	},
-		// 	method:      http.MethodPost,
-		// 	urlPath:     "/update/counter/someMetric/527",
-		// 	contentType: "application/json",
-		// },
-		{
-			name: "test #4 - Bad URL",
-			want: want{
-				statusCode:   http.StatusNotFound,
-				responseText: "404 page not found\n",
-			},
-			method:      http.MethodPost,
-			urlPath:     "/update/",
 			contentType: "text/plain",
 		},
 		{
@@ -177,11 +172,66 @@ func TestRouter(t *testing.T) {
 			urlPath:     "/",
 			contentType: "text/plain",
 		},
+		{
+			name: "test #14 - update metrics with json-body - OK",
+			want: want{
+				statusCode:   http.StatusOK,
+				responseText: `{"id":"foo","type":"gauge","value":1.010101}`,
+			},
+			method:      http.MethodPost,
+			urlPath:     "/update/",
+			contentType: "application/json",
+			body:        `{"id":"foo","type":"gauge","value":1.010101}`,
+		},
+		{
+			name: "test #15 - update metrics with json-body - bad method",
+			want: want{
+				statusCode:   http.StatusMethodNotAllowed,
+				responseText: "",
+			},
+			method:      http.MethodGet,
+			urlPath:     "/update/",
+			contentType: "application/json",
+			body:        `{"id":"foo","type":"gauge","value":1.010101}`,
+		},
+		{
+			name: "test #16 - update metrics with json-body - bad contentType",
+			want: want{
+				statusCode:   http.StatusBadRequest,
+				responseText: "",
+			},
+			method:      http.MethodPost,
+			urlPath:     "/update/",
+			contentType: "text/plain",
+			body:        `{"id":"foo","type":"gauge","value":1.010101}`,
+		},
+		{
+			name: "test #17 - update metrics with json-body - bad request body",
+			want: want{
+				statusCode:   http.StatusBadRequest,
+				responseText: "",
+			},
+			method:      http.MethodPost,
+			urlPath:     "/update/",
+			contentType: "application/json",
+			body:        `{"id":"foo}`,
+		},
+		{
+			name: "test #18 - get metrics value - OK",
+			want: want{
+				statusCode:   http.StatusOK,
+				responseText: "",
+			},
+			method:      http.MethodPost,
+			urlPath:     "/value/",
+			contentType: "application/json",
+			body:        `{"id":"foo","type":"counter"}`,
+		},
 	}
 
 	for _, v := range tests {
 		t.Run(v.name, func(t *testing.T) {
-			resp, respText := testRequest(t, ts, v.method, v.urlPath)
+			resp, respText := testRequest(t, ts, v.method, v.urlPath, strings.NewReader(v.body), v.contentType)
 			resp.Body.Close()
 			assert.Equal(t, v.want.statusCode, resp.StatusCode)
 			if v.want.responseText != "" {

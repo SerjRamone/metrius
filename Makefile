@@ -7,7 +7,7 @@ build-agent:
 	go build -o cmd/agent/agent cmd/agent/*.go
 
 run-server: build-server
-	./cmd/server/server -a="localhost:8080"
+	./cmd/server/server -a="localhost:8080" -i=0
 
 run-agent: build-agent
 	./cmd/agent/agent -a="localhost:8080" -r=10 -p=2
@@ -15,7 +15,7 @@ run-agent: build-agent
 stattest:
 	go vet -vettool=statictest ./...
 	
-autotests: build autotests5
+autotests: build autotests9
 	
 autotests1:
 	./metricstest -test.v -test.run=^TestIteration1$$ -agent-binary-path=cmd/agent/agent -binary-path=cmd/server/server
@@ -31,3 +31,15 @@ autotests4: autotests3
 
 autotests5: autotests4
 	./metricstest -test.v -test.run=^TestIteration5$$ -source-path=. -agent-binary-path=cmd/agent/agent -binary-path=cmd/server/server -server-port="8008"
+
+autotests6: autotests5
+	./metricstest -test.v -test.run=^TestIteration6$$ -source-path=. -agent-binary-path=cmd/agent/agent -binary-path=cmd/server/server -server-port="8008" 
+
+autotests7: autotests6
+	./metricstest -test.v -test.run=^TestIteration7$$ -source-path=. -agent-binary-path=cmd/agent/agent -binary-path=cmd/server/server -server-port="8008"
+
+autotests8: autotests7
+	./metricstest -test.v -test.run=^TestIteration8$$ -source-path=. -agent-binary-path=cmd/agent/agent -binary-path=cmd/server/server -server-port="8008"
+
+autotests9: autotests8
+	./metricstest -test.v -test.run=^TestIteration9$$ -source-path=. -agent-binary-path=cmd/agent/agent -binary-path=cmd/server/server -server-port="8008" -file-storage-path=/tmp/metrics-tests-db.json

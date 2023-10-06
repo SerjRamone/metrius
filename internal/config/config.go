@@ -16,9 +16,15 @@ const (
 	agentUsageReportInterval = "period of time for sending data to server in seconds"
 	agentUsagePollInterval   = "period of time for collecting metrics values in seconds"
 
-	serverDefaultAddress = "localhost:8080"
+	serverDefaultAddress         = "localhost:8080"
+	serverDefaultStoreInterval   = 300
+	serverDefaultFileStoragePath = "/tmp/metrics-db.json"
+	serverDefaultRestore         = true
 
-	serverUsageAddress = "address and port to run server"
+	serverUsageAddress         = "address and port to run server"
+	serverUsageStoreInterval   = "period of time for put metrics to file"
+	serverUsageFileStoragePath = "path to file for store metrics"
+	serverUsageRestore         = "if true then server will resotre metrics from file storage"
 )
 
 // Agent contents config for Agent
@@ -51,7 +57,10 @@ func (c *Agent) parseEnv() error {
 
 // Server contents config for Server
 type Server struct {
-	Address string `env:"ADDRESS"`
+	Address         string `env:"ADDRESS"`
+	StoreInterval   int    `env:"STORE_INTERVAL"`
+	FileStoragePath string `env:"FILE_STORAGE_PATH"`
+	Restore         bool   `env:"RESTORE"`
 }
 
 // NewServer constructor for server config
@@ -64,6 +73,9 @@ func NewServer() (Server, error) {
 // parseFlags parse cli flags
 func (c *Server) parseFlags() {
 	flag.StringVar(&c.Address, "a", serverDefaultAddress, serverUsageAddress)
+	flag.IntVar(&c.StoreInterval, "i", serverDefaultStoreInterval, serverUsageStoreInterval)
+	flag.StringVar(&c.FileStoragePath, "f", serverDefaultFileStoragePath, serverUsageFileStoragePath)
+	flag.BoolVar(&c.Restore, "r", serverDefaultRestore, serverUsageRestore)
 
 	flag.Parse()
 }

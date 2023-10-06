@@ -8,6 +8,8 @@ import (
 	collect "github.com/SerjRamone/metrius/internal/collector"
 	"github.com/SerjRamone/metrius/internal/config"
 	"github.com/SerjRamone/metrius/internal/sender"
+	"github.com/SerjRamone/metrius/pkg/logger"
+	"go.uber.org/zap"
 )
 
 func main() {
@@ -16,7 +18,9 @@ func main() {
 		log.Fatal("config parse error: ", err)
 	}
 
-	log.Printf("Loaded agent config: %+v\n", conf)
+	if err := logger.Init("info"); err != nil {
+		log.Fatal("can't init logger")
+	}
 
 	reportedAt := time.Now()
 	polledAt := time.Now()
@@ -38,9 +42,8 @@ func main() {
 			if collections := collector.Export(); len(collections) > 0 {
 				err := sender.Send(collections)
 				if err != nil {
-					log.Println("sender error: ", err)
+					logger.Error("sender error", zap.Error(err))
 				}
-				log.Println("📨  sended")
 			}
 
 			reportedAt = time.Now()

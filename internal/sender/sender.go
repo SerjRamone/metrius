@@ -2,8 +2,12 @@
 package sender
 
 import (
+	"bytes"
+	"compress/gzip"
+	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"time"
 
@@ -43,8 +47,43 @@ func (sender *metricsSender) Send(collections []metrics.Collection) error {
 
 // single request
 func (sender *metricsSender) sendMetrics(m metrics.CollectionItem) (*http.Response, error) {
-	url := fmt.Sprintf("%s/update/%s/%s/%f", sender.sURL, m.Type, m.Name, m.Value)
-	r, err := http.Post(url, "text/plain", nil)
+	url := fmt.Sprintf("%s/update/", sender.sURL)
+
+	item := metrics.Metrics{
+		ID:    m.Name,
+		MType: m.Type,
+	}
+
+	switch m.Type {
+	case "gauge":
+		item.Value = &m.Value
+	case "counter":
+		tmp := int64(m.Value)
+		item.Delta = &tmp
+	}
+
+	data, err := json.Marshal(item)
+	if err != nil {
+		log.Println("metrics encode error", err)
+	}
+
+	var b bytes.Buffer
+	gw := gzip.NewWriter(&b)
+	if _, err = gw.Write(data); err != nil {
+		return nil, err
+	}
+	if err = gw.Close(); err != nil {
+		return nil, err
+	}
+	req, err := http.NewRequest("POST", url, &b)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Content-Encoding", "gzip")
+	if err != nil {
+		return nil, err
+	}
+
+	client := &http.Client{}
+	r, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}
