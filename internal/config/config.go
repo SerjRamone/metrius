@@ -20,11 +20,13 @@ const (
 	serverDefaultStoreInterval   = 300
 	serverDefaultFileStoragePath = "/tmp/metrics-db.json"
 	serverDefaultRestore         = true
+	serverDefaultDatabaseDSN     = ""
 
 	serverUsageAddress         = "address and port to run server"
 	serverUsageStoreInterval   = "period of time for put metrics to file"
 	serverUsageFileStoragePath = "path to file for store metrics"
 	serverUsageRestore         = "if true then server will resotre metrics from file storage"
+	serverUsageDatabaseDSN     = "put data sourse string in format: \"host=host port=port user=myuser password=xxxx dbname=mydb sslmode=disable\""
 )
 
 // Agent contents config for Agent
@@ -61,6 +63,7 @@ type Server struct {
 	StoreInterval   int    `env:"STORE_INTERVAL"`
 	FileStoragePath string `env:"FILE_STORAGE_PATH"`
 	Restore         bool   `env:"RESTORE"`
+	DatabaseDSN     string `env:"DATABASE_DSN"`
 }
 
 // NewServer constructor for server config
@@ -76,6 +79,7 @@ func (c *Server) parseFlags() {
 	flag.IntVar(&c.StoreInterval, "i", serverDefaultStoreInterval, serverUsageStoreInterval)
 	flag.StringVar(&c.FileStoragePath, "f", serverDefaultFileStoragePath, serverUsageFileStoragePath)
 	flag.BoolVar(&c.Restore, "r", serverDefaultRestore, serverUsageRestore)
+	flag.StringVar(&c.DatabaseDSN, "d", serverDefaultDatabaseDSN, serverUsageDatabaseDSN)
 
 	flag.Parse()
 }

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/SerjRamone/metrius/internal/config"
+	"github.com/SerjRamone/metrius/internal/db"
 	"github.com/SerjRamone/metrius/internal/handlers"
 	"github.com/SerjRamone/metrius/internal/storage"
 	"github.com/SerjRamone/metrius/pkg/logger"
@@ -41,6 +42,11 @@ func run() error {
 
 	mStorage := storage.New(conf.StoreInterval, backupFile)
 
+	pgDB, err := db.Dial(conf.DatabaseDSN)
+	if err != nil {
+		return err
+	}
+
 	ctx, cancel := context.WithCancel(context.Background())
 
 	// catch signals
@@ -50,7 +56,7 @@ func run() error {
 	// creating server
 	server := &http.Server{
 		Addr:    conf.Address,
-		Handler: handlers.Router(mStorage),
+		Handler: handlers.Router(mStorage, pgDB),
 	}
 
 	if conf.Restore {
@@ -63,17 +69,13 @@ func run() error {
 	if conf.StoreInterval != 0 {
 		go func() {
 			logger.Info("backuper started", zap.Int("StoreInterval", conf.StoreInterval))
-			storedAt := time.Now()
+			ticker := time.NewTicker(time.Duration(conf.StoreInterval) * time.Second)
 			for {
-				seconds := int((time.Since(storedAt)).Seconds())
-				if seconds >= conf.StoreInterval {
-					if err := mStorage.Backup(); err != nil {
-						logger.Error("backup error", zap.Error(err))
-					}
-					storedAt = time.Now()
-				}
+				<-ticker.C
 
-				time.Sleep(500 * time.Millisecond)
+				if err := mStorage.Backup(); err != nil {
+					logger.Error("backup error", zap.Error(err))
+				}
 			}
 		}()
 	}
@@ -110,6 +112,10 @@ func run() error {
 		// close resources
 		if err := backupFile.Close(); err != nil {
 			logger.Error("backup file close error", zap.Error(err))
+		}
+
+		if err := pgDB.Close(); err != nil {
+			logger.Error("db closing error", zap.Error(err))
 		}
 
 	case <-ctx.Done():

@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/SerjRamone/metrius/internal/db"
 	"github.com/SerjRamone/metrius/internal/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -45,8 +46,9 @@ func TestRouter(t *testing.T) {
 	f, _ := os.CreateTemp(os.TempDir(), "")
 	m := storage.New(300, f)
 	_ = m.SetCounter("foo", 1)
+	db := &db.DB{}
 
-	ts := httptest.NewServer(Router(m))
+	ts := httptest.NewServer(Router(m, db))
 	defer ts.Close()
 
 	type want struct {
