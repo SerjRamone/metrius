@@ -22,6 +22,8 @@ func main() {
 		log.Fatal("can't init logger")
 	}
 
+	logger.Info("loaded config", zap.Object("config", &conf))
+
 	reportedAt := time.Now()
 	polledAt := time.Now()
 
