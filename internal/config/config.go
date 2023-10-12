@@ -5,6 +5,7 @@ import (
 	"flag"
 
 	"github.com/caarlos0/env"
+	"go.uber.org/zap/zapcore"
 )
 
 const (
@@ -26,7 +27,7 @@ const (
 	serverUsageStoreInterval   = "period of time for put metrics to file"
 	serverUsageFileStoragePath = "path to file for store metrics"
 	serverUsageRestore         = "if true then server will resotre metrics from file storage"
-	serverUsageDatabaseDSN     = "put data sourse string in format: \"host=host port=port user=myuser password=xxxx dbname=mydb sslmode=disable\""
+	serverUsageDatabaseDSN     = "data sourse string in format: \"host=host port=port user=myuser password=xxxx dbname=mydb sslmode=disable\""
 )
 
 // Agent contents config for Agent
@@ -55,6 +56,14 @@ func (c *Agent) parseFlags() {
 // parseEnv parse environtment variables
 func (c *Agent) parseEnv() error {
 	return env.Parse(c)
+}
+
+// MarshalLogObject zapcore.ObjectMarshaler implemet for loggin agent config struct
+func (c *Agent) MarshalLogObject(enc zapcore.ObjectEncoder) error {
+	enc.AddString("ServerAddress", c.ServerAddress)
+	enc.AddInt("ReportInterval", c.ReportInterval)
+	enc.AddInt("PollInterval", c.PollInterval)
+	return nil
 }
 
 // Server contents config for Server
@@ -87,4 +96,14 @@ func (c *Server) parseFlags() {
 // parseEnv parse environtment variables
 func (c *Server) parseEnv() error {
 	return env.Parse(c)
+}
+
+// MarshalLogObject zapcore.ObjectMarshaler implemet for loggin server config struct
+func (c *Server) MarshalLogObject(enc zapcore.ObjectEncoder) error {
+	enc.AddString("Address", c.Address)
+	enc.AddInt("StoreInterval", c.StoreInterval)
+	enc.AddString("FileStoragePath", c.FileStoragePath)
+	enc.AddBool("Restore", c.Restore)
+	enc.AddString("DatabaseDSN", c.DatabaseDSN)
+	return nil
 }

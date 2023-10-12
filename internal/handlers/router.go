@@ -8,9 +8,9 @@ import (
 )
 
 // Router returns chi.Router
-func Router(mS storage.MemStorage, db *db.DB) chi.Router {
+func Router(s storage.Storage, db *db.DB) chi.Router {
 	r := chi.NewRouter()
-	bHandler := NewBaseHandler(mS, db)
+	bHandler := NewBaseHandler(s, db)
 
 	r.Use(middlewares.RequestLogger)
 

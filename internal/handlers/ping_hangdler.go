@@ -8,9 +8,13 @@ import (
 )
 
 // Ping is a /ping/ handler, DB connect healthcheck
-// @todo
 func (bHandler baseHandler) Ping() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if bHandler.db == nil {
+			logger.Warn("db is not initialized")
+			w.WriteHeader(http.StatusTeapot)
+			return
+		}
 		_, err := bHandler.db.Exec("SELECT 1")
 		if err != nil {
 			logger.Error("can't ping db", zap.Error(err))

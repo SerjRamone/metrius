@@ -7,7 +7,7 @@ build-agent:
 	go build -o cmd/agent/agent cmd/agent/*.go
 
 run-server: build-server
-	./cmd/server/server -a="localhost:8080" -i=0 -d=postgresql://postgres:postgres@localhost:5432/postgres?sslmode=disable
+	./cmd/server/server -a="localhost:8080" -i=0 -d=postgresql://postgres:postgres@localhost:5432/metrius?sslmode=disable
 
 run-agent: build-agent
 	./cmd/agent/agent -a="localhost:8080" -r=10 -p=2
@@ -45,4 +45,8 @@ autotests9: autotests8
 	./metricstest -test.v -test.run=^TestIteration9$$ -source-path=. -agent-binary-path=cmd/agent/agent -binary-path=cmd/server/server -server-port="8008" -file-storage-path=/tmp/metrics-tests-db.json
 
 autotests10: autotests9
-	./metricstest -test.v -test.run=^TestIteration10[AB]$$ -source-path=. -agent-binary-path=cmd/agent/agent -binary-path=cmd/server/server -server-port="8080" -database-dsn='postgresql://postgres:postgres@localhost:5432/postgres?sslmode=disable' 
+	./metricstest -test.v -test.run=^TestIteration10[AB]$$ -source-path=. -agent-binary-path=cmd/agent/agent -binary-path=cmd/server/server -server-port="8080" -database-dsn='postgresql://postgres:postgres@localhost:5432/metrius?sslmode=disable' 
+
+autotests11:
+	./metricstest -test.v -test.run=^TestIteration11$$ -source-path=. -agent-binary-path=cmd/agent/agent -binary-path=cmd/server/server -server-port="8008" -database-dsn='postgres://postgres:postgres@localhost:5432/metrius?sslmode=disable'
+
