@@ -5,6 +5,8 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
+	"sync"
 
 	"github.com/SerjRamone/metrius/internal/db"
 	"github.com/SerjRamone/metrius/internal/metrics"
@@ -22,6 +24,7 @@ type Storage interface {
 	SetCounter(string, metrics.Counter) error
 	Counter(string) (metrics.Counter, bool)
 	Counters() map[string]metrics.Counter
+	BatchUpsert([]metrics.Metrics) error
 }
 
 var (
@@ -40,17 +43,21 @@ type MemStorage struct {
 // SQLStorage is a database storage
 type SQLStorage struct {
 	db *db.DB
+	mu *sync.Mutex
 }
 
 // NewSQLStorage creates SQL db storage
 func NewSQLStorage(db *db.DB) SQLStorage {
 	return SQLStorage{
 		db: db,
+		mu: &sync.Mutex{},
 	}
 }
 
 // SetGauge insert or update metrics value of type gauge
 func (dbs SQLStorage) SetGauge(name string, value metrics.Gauge) error {
+	dbs.mu.Lock()
+	defer dbs.mu.Unlock()
 	_, err := dbs.db.ExecContext(
 		context.TODO(),
 		"INSERT INTO metrics (id, mtype, value) VALUES ($1, $2, $3) ON CONFLICT (id) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()",
@@ -68,6 +75,8 @@ func (dbs SQLStorage) SetGauge(name string, value metrics.Gauge) error {
 
 // Gauge returns value of type gauge by name
 func (dbs SQLStorage) Gauge(name string) (metrics.Gauge, bool) {
+	dbs.mu.Lock()
+	defer dbs.mu.Unlock()
 	row := dbs.db.QueryRowContext(context.TODO(), "SELECT value FROM metrics WHERE mtype='gauge' AND id=$1", name)
 	var value float64
 	err := row.Scan(&value)
@@ -77,11 +86,13 @@ func (dbs SQLStorage) Gauge(name string) (metrics.Gauge, bool) {
 		}
 		return 0, false
 	}
-	return metrics.Gauge(value), false
+	return metrics.Gauge(value), true
 }
 
 // Gauges returns map of all setted gauges
 func (dbs SQLStorage) Gauges() map[string]metrics.Gauge {
+	dbs.mu.Lock()
+	defer dbs.mu.Unlock()
 	result := map[string]metrics.Gauge{}
 	rows, err := dbs.db.QueryContext(context.TODO(), "SELECT id, value FROM metrics WHERE mtype='gauge'")
 	if err != nil {
@@ -113,6 +124,8 @@ func (dbs SQLStorage) Gauges() map[string]metrics.Gauge {
 
 // SetCounter increase metrics value of type counter
 func (dbs SQLStorage) SetCounter(name string, value metrics.Counter) error {
+	dbs.mu.Lock()
+	defer dbs.mu.Unlock()
 	_, err := dbs.db.ExecContext(
 		context.TODO(),
 		"INSERT INTO metrics (id, mtype, delta) VALUES ($1, $2, $3) ON CONFLICT (id) DO UPDATE SET delta = EXCLUDED.delta + metrics.delta, updated_at = NOW()",
@@ -130,6 +143,8 @@ func (dbs SQLStorage) SetCounter(name string, value metrics.Counter) error {
 
 // Counter returns value of type counter by name
 func (dbs SQLStorage) Counter(name string) (metrics.Counter, bool) {
+	dbs.mu.Lock()
+	defer dbs.mu.Unlock()
 	row := dbs.db.QueryRowContext(context.TODO(), "SELECT delta FROM metrics WHERE mtype='counter' AND id=$1", name)
 	var delta int64
 	err := row.Scan(&delta)
@@ -139,11 +154,13 @@ func (dbs SQLStorage) Counter(name string) (metrics.Counter, bool) {
 		}
 		return 0, false
 	}
-	return metrics.Counter(delta), false
+	return metrics.Counter(delta), true
 }
 
 // Counters returns map of all setted counters
 func (dbs SQLStorage) Counters() map[string]metrics.Counter {
+	dbs.mu.Lock()
+	defer dbs.mu.Unlock()
 	result := map[string]metrics.Counter{}
 	rows, err := dbs.db.QueryContext(context.TODO(), "SELECT id, delta FROM metrics WHERE mtype='counter'")
 	if err != nil {
@@ -171,6 +188,56 @@ func (dbs SQLStorage) Counters() map[string]metrics.Counter {
 	}
 
 	return result
+}
+
+// BatchUpsert insert or updates metrics in batches
+func (dbs SQLStorage) BatchUpsert(batch []metrics.Metrics) error {
+	dbs.mu.Lock()
+	defer dbs.mu.Unlock()
+
+	tx, err := dbs.db.Begin()
+	if err != nil {
+		return err
+	}
+
+	for _, m := range batch {
+		switch m.MType {
+		case "gauge":
+			_, err := dbs.db.ExecContext(
+				context.TODO(),
+				"INSERT INTO metrics (id, mtype, value) VALUES ($1, $2, $3) ON CONFLICT (id) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()",
+				m.ID,
+				"gauge",
+				float64(*m.Value),
+			)
+			if err != nil {
+				logger.Error("batch upsert gauge error", zap.Error(err))
+				if err = tx.Rollback(); err != nil {
+					logger.Error("tx rollback error", zap.Error(err))
+				}
+				return err
+			}
+		case "counter":
+			_, err := dbs.db.ExecContext(
+				context.TODO(),
+				"INSERT INTO metrics (id, mtype, delta) VALUES ($1, $2, $3) ON CONFLICT (id) DO UPDATE SET delta = EXCLUDED.delta + metrics.delta, updated_at = NOW()",
+				m.ID,
+				"counter",
+				int64(*m.Delta),
+			)
+			if err != nil {
+				logger.Error("batch upsert counter error", zap.Error(err))
+				if err = tx.Rollback(); err != nil {
+					logger.Error("tx rollback error", zap.Error(err))
+				}
+				return err
+			}
+		default:
+			return fmt.Errorf("unknown metrics type: %v", m.MType)
+		}
+	}
+
+	return tx.Commit()
 }
 
 // NewMemStorage is a constructor of MemStorage storage
@@ -253,4 +320,26 @@ func (s MemStorage) Gauges() map[string]metrics.Gauge {
 // Counters returns map of all setted counters
 func (s MemStorage) Counters() map[string]metrics.Counter {
 	return s.counters
+}
+
+// BatchUpsert insert or updates metrics in batches
+func (s MemStorage) BatchUpsert(batch []metrics.Metrics) error {
+	for _, m := range batch {
+		switch m.MType {
+		case "gauge":
+			err := s.SetGauge(m.ID, metrics.Gauge(*m.Value))
+			if err != nil {
+				logger.Error("can't set gauge", zap.String("id", m.ID), zap.Float64("value", *m.Value), zap.Error(err))
+			}
+		case "counter":
+			err := s.SetCounter(m.ID, metrics.Counter(*m.Delta))
+			if err != nil {
+				logger.Error("can't set counter", zap.String("id", m.ID), zap.Int64("delta", *m.Delta), zap.Error(err))
+			}
+		default:
+			return fmt.Errorf("unknown metrics type: %v", m.MType)
+		}
+	}
+
+	return nil
 }

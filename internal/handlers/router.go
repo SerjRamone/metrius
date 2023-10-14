@@ -18,6 +18,7 @@ func Router(s storage.Storage, db *db.DB) chi.Router {
 
 	r.Post("/value/", middlewares.GzipCompressor(bHandler.ValueJSON()))
 	r.Post("/update/", middlewares.GzipCompressor(bHandler.UpdateJSON()))
+	r.Post("/updates/", middlewares.GzipCompressor(bHandler.Updates()))
 
 	r.Get("/value/{type}/{name}", bHandler.Value())
 	r.Post("/update/{type}/{name}/{value}", bHandler.Update())

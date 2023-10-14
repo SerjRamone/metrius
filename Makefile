@@ -1,3 +1,5 @@
+DSN = 'postgres://postgres:postgres@localhost:5432/metrius?sslmode=disable'
+	
 build: build-agent build-server
 
 build-server:
@@ -15,7 +17,7 @@ run-agent: build-agent
 stattest:
 	go vet -vettool=statictest ./...
 	
-autotests: buijd autotests10
+autotests: build autotests12
 	
 autotests1:
 	./metricstest -test.v -test.run=^TestIteration1$$ -agent-binary-path=cmd/agent/agent -binary-path=cmd/server/server
@@ -45,8 +47,10 @@ autotests9: autotests8
 	./metricstest -test.v -test.run=^TestIteration9$$ -source-path=. -agent-binary-path=cmd/agent/agent -binary-path=cmd/server/server -server-port="8008" -file-storage-path=/tmp/metrics-tests-db.json
 
 autotests10: autotests9
-	./metricstest -test.v -test.run=^TestIteration10[AB]$$ -source-path=. -agent-binary-path=cmd/agent/agent -binary-path=cmd/server/server -server-port="8080" -database-dsn='postgresql://postgres:postgres@localhost:5432/metrius?sslmode=disable' 
+	./metricstest -test.v -test.run=^TestIteration10[AB]$$ -source-path=. -agent-binary-path=cmd/agent/agent -binary-path=cmd/server/server -server-port="8080" -database-dsn=$(DSN)
 
-autotests11:
-	./metricstest -test.v -test.run=^TestIteration11$$ -source-path=. -agent-binary-path=cmd/agent/agent -binary-path=cmd/server/server -server-port="8008" -database-dsn='postgres://postgres:postgres@localhost:5432/metrius?sslmode=disable'
+autotests11: autotests10
+	./metricstest -test.v -test.run=^TestIteration11$$ -source-path=. -agent-binary-path=cmd/agent/agent -binary-path=cmd/server/server -server-port="8008" -database-dsn=$(DSN)
 
+autotests12: autotests11
+	./metricstest -test.v -test.run=^TestIteration12$$ -source-path=. -agent-binary-path=cmd/agent/agent -binary-path=cmd/server/server -server-port="8008" -database-dsn=$(DSN)

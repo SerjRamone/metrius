@@ -14,6 +14,7 @@ type metricsStorage interface {
 	SetCounter(string, metrics.Counter) error
 	Counter(string) (metrics.Counter, bool)
 	Counters() map[string]metrics.Counter
+	BatchUpsert([]metrics.Metrics) error
 }
 
 // baseHandler base handler with storage inside

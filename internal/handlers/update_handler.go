@@ -78,6 +78,48 @@ func (bHandler baseHandler) Update() http.HandlerFunc {
 	}
 }
 
+// Updates is a /updates/ handler
+func (bHandler baseHandler) Updates() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Add("Accept", "application/json")
+		w.Header().Add("Content-Type", "application/json")
+
+		if r.Header.Get("Content-Type") != "application/json" {
+			http.Error(w, "Bad content-type", http.StatusBadRequest)
+			return
+		}
+
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			logger.Info("request body reading error", zap.Error(err))
+			http.Error(w, "Request body reading error", http.StatusBadRequest)
+			return
+		}
+
+		var batch []metrics.Metrics
+
+		if err := json.Unmarshal(body, &batch); err != nil {
+			logger.Info("cannot decode request JSON body", zap.Error(err))
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		if err := bHandler.storage.BatchUpsert(batch); err != nil {
+			logger.Info("cannot do batch upsert", zap.Error(err))
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		w.Header().Add("Content-Type", "application/json")
+		_, err = w.Write([]byte("{}")) // can't pass autotests without this line iter12
+		if err != nil {
+			logger.Error("can't write response:", zap.Error(err))
+			http.Error(w, "internal server error", http.StatusInternalServerError)
+		}
+	}
+}
+
 // Update is a /update/ handler with JSON body
 func (bHandler baseHandler) UpdateJSON() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {

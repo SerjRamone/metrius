@@ -18,16 +18,19 @@ type BackupRestorer interface {
 
 var _ BackupRestorer = (*FileBackuper)(nil)
 
+// FileBackuper file backuper struct
 type FileBackuper struct {
 	file *os.File
 }
 
+// NewFileBackuper creates new FileBackuper instance
 func NewFileBackuper(f *os.File) FileBackuper {
 	return FileBackuper{
 		file: f,
 	}
 }
 
+// Backup put metrics to file
 func (fb FileBackuper) Backup(gauges map[string]metrics.Gauge, counters map[string]metrics.Counter) error {
 	var structs []metrics.Metrics
 	// clear file content
@@ -71,6 +74,7 @@ func (fb FileBackuper) Backup(gauges map[string]metrics.Gauge, counters map[stri
 	return nil
 }
 
+// Restore get metrics from file backup
 func (fb FileBackuper) Restore(gauges map[string]metrics.Gauge, counters map[string]metrics.Counter) error {
 	var structs []metrics.Metrics
 	decoder := json.NewDecoder(fb.file)
