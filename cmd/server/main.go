@@ -3,6 +3,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"os"
 	"os/signal"
@@ -174,7 +175,7 @@ func runPgMigrations(dsn string) error {
 		return err
 	}
 	if err := m.Up(); err != nil {
-		if err == migrate.ErrNoChange {
+		if errors.Is(err, migrate.ErrNoChange) {
 			logger.Info("no change made by migration scripts")
 			return nil
 		}

@@ -5,14 +5,17 @@ import (
 	"bytes"
 	"compress/gzip"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"time"
 
 	"github.com/SerjRamone/metrius/internal/metrics"
 	"github.com/SerjRamone/metrius/pkg/logger"
+	"github.com/SerjRamone/metrius/pkg/retry"
 	"go.uber.org/zap"
 )
 
@@ -88,6 +91,7 @@ func (sender *metricsSender) SendBatch(collections []metrics.Collection) error {
 		if err = gw.Close(); err != nil {
 			return err
 		}
+
 		req, err := http.NewRequest("POST", url, &b)
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Content-Encoding", "gzip")
@@ -99,7 +103,23 @@ func (sender *metricsSender) SendBatch(collections []metrics.Collection) error {
 		client := &http.Client{}
 		r, err := client.Do(req)
 		if err != nil {
-			logger.Error("doing request error", zap.Error(err))
+			var netError net.Error
+			if errors.As(err, &netError) {
+				err = retry.WithBackoff(func() error {
+					r, err := client.Do(req)
+					if err != nil {
+						return err
+					}
+					_, err = io.Copy(io.Discard, r.Body)
+					if err != nil {
+						logger.Error("io.Copy error", zap.Error(err))
+					}
+					defer r.Body.Close()
+					return err
+				}, 3)
+				return err
+			}
+			logger.Error("send metrics in batch error", zap.Error(err))
 			return err
 		}
 		defer r.Body.Close()
@@ -154,6 +174,23 @@ func (sender *metricsSender) sendMetrics(m metrics.CollectionItem) (*http.Respon
 	client := &http.Client{}
 	r, err := client.Do(req)
 	if err != nil {
+		var netError net.Error
+		if errors.As(err, &netError) {
+			err = retry.WithBackoff(func() error {
+				r, err := client.Do(req)
+				if err != nil {
+					return err
+				}
+				_, err = io.Copy(io.Discard, r.Body)
+				if err != nil {
+					return err
+				}
+				defer r.Body.Close()
+				return err
+			}, 3)
+			return r, err
+		}
+		logger.Error("send metrics error", zap.Error(err))
 		return nil, err
 	}
 	defer r.Body.Close()
