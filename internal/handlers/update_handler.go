@@ -111,10 +111,6 @@ func (bHandler baseHandler) Updates() http.HandlerFunc {
 		}
 
 		w.WriteHeader(http.StatusOK)
-		if err != nil {
-			logger.Error("can't write response:", zap.Error(err))
-			http.Error(w, "internal server error", http.StatusInternalServerError)
-		}
 	}
 }
 
