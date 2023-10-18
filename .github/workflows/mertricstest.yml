@@ -18,7 +18,7 @@ jobs:
 
   metricstest:
     runs-on: ubuntu-latest
-    container: golang:1.21
+    container: golang:1.20
     needs: branchtest
 
     services:
@@ -38,7 +38,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Download autotests binaries
-        uses: robinraju/release-downloader@v1
+        uses: robinraju/release-downloader@v1.7
         with:
           repository: Yandex-Practicum/go-autotests
           tag: refactor
