@@ -9,7 +9,7 @@ build-agent:
 	go build -o cmd/agent/agent cmd/agent/*.go
 
 run-server: build-server
-	./cmd/server/server -a="localhost:8080" -i=0 -d=postgresql://postgres:postgres@localhost:5432/metrius?sslmode=disable
+	./cmd/server/server -a="localhost:8080" -i=0 -d=$(DSN)
 
 run-agent: build-agent
 	./cmd/agent/agent -a="localhost:8080" -r=10 -p=2

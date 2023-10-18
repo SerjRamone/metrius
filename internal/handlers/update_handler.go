@@ -111,8 +111,6 @@ func (bHandler baseHandler) Updates() http.HandlerFunc {
 		}
 
 		w.WriteHeader(http.StatusOK)
-		w.Header().Add("Content-Type", "application/json")
-		_, err = w.Write([]byte("{}")) // can't pass autotests without this line iter12
 		if err != nil {
 			logger.Error("can't write response:", zap.Error(err))
 			http.Error(w, "internal server error", http.StatusInternalServerError)
