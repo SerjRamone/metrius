@@ -2,7 +2,6 @@
 package handlers
 
 import (
-	"github.com/SerjRamone/metrius/internal/db"
 	"github.com/SerjRamone/metrius/internal/metrics"
 	"github.com/SerjRamone/metrius/internal/storage"
 )
@@ -20,13 +19,11 @@ type metricsStorage interface {
 // baseHandler base handler with storage inside
 type baseHandler struct {
 	storage metricsStorage
-	db      *db.DB
 }
 
 // NewBaseHandler creates new baseHandler
-func NewBaseHandler(storage storage.Storage, db *db.DB) baseHandler {
+func NewBaseHandler(storage storage.Storage) baseHandler {
 	return baseHandler{
 		storage: storage,
-		db:      db,
 	}
 }

@@ -1,16 +1,15 @@
 package handlers
 
 import (
-	"github.com/SerjRamone/metrius/internal/db"
 	"github.com/SerjRamone/metrius/internal/middlewares"
 	"github.com/SerjRamone/metrius/internal/storage"
 	"github.com/go-chi/chi/v5"
 )
 
 // Router returns chi.Router
-func Router(s storage.Storage, db *db.DB) chi.Router {
+func Router(s storage.Storage) chi.Router {
 	r := chi.NewRouter()
-	bHandler := NewBaseHandler(s, db)
+	bHandler := NewBaseHandler(s)
 
 	r.Use(middlewares.RequestLogger)
 

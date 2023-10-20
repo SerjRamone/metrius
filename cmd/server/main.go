@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/SerjRamone/metrius/internal/config"
-	"github.com/SerjRamone/metrius/internal/db"
 	"github.com/SerjRamone/metrius/internal/handlers"
 	"github.com/SerjRamone/metrius/internal/storage"
 	"github.com/SerjRamone/metrius/pkg/logger"
@@ -43,24 +42,19 @@ func run() error {
 
 	var backuper storage.BackupRestorer
 	var backupFile *os.File
-	var pgDB *db.DB
 	var stor storage.Storage
 
 	if conf.DatabaseDSN != "" { // store metrics in database
-		pgDB, err = db.Dial(conf.DatabaseDSN)
+		stor, err = storage.NewSQLStorage(conf.DatabaseDSN)
 		if err != nil {
 			return err
 		}
 
 		// run Postgres migrations
-		if pgDB != nil {
-			logger.Info("running pg migrations")
-			if err := runPgMigrations(conf.DatabaseDSN); err != nil {
-				return err
-			}
+		logger.Info("running pg migrations")
+		if err := runPgMigrations(conf.DatabaseDSN); err != nil {
+			return err
 		}
-
-		stor = storage.NewSQLStorage(pgDB)
 	} else { // store metrics in memory
 		backupFile, err = os.OpenFile(conf.FileStoragePath, os.O_RDWR|os.O_CREATE, 0666)
 		if err != nil {
@@ -83,10 +77,10 @@ func run() error {
 	// creating server
 	server := &http.Server{
 		Addr:    conf.Address,
-		Handler: handlers.Router(stor, pgDB),
+		Handler: handlers.Router(stor),
 	}
 
-	if conf.Restore && pgDB == nil {
+	if conf.Restore {
 		if v, ok := stor.(storage.MemStorage); ok {
 			if err := v.Restore(); err != nil {
 				logger.Error("can't restore from file", zap.Error(err))
@@ -95,7 +89,7 @@ func run() error {
 		}
 	}
 
-	if conf.StoreInterval != 0 && pgDB == nil {
+	if conf.StoreInterval != 0 {
 		if v, ok := stor.(storage.MemStorage); ok {
 			go func() {
 				logger.Info("backuper started", zap.Int("StoreInterval", conf.StoreInterval))
@@ -136,11 +130,9 @@ func run() error {
 		}
 
 		// backup metrics
-		if pgDB == nil {
-			if v, ok := stor.(storage.MemStorage); ok {
-				if err := v.Backup(); err != nil {
-					logger.Error("backup error", zap.Error(err))
-				}
+		if v, ok := stor.(storage.MemStorage); ok {
+			if err := v.Backup(); err != nil {
+				logger.Error("backup error", zap.Error(err))
 			}
 		}
 
@@ -151,8 +143,8 @@ func run() error {
 			}
 		}
 
-		if pgDB != nil {
-			if err := pgDB.Close(); err != nil {
+		if v, ok := stor.(storage.SQLStorage); ok {
+			if err := v.DBClose(); err != nil {
 				logger.Error("db closing error", zap.Error(err))
 			}
 		}
@@ -168,7 +160,7 @@ func run() error {
 // runPgMigrations runs Postgres migrations
 func runPgMigrations(dsn string) error {
 	m, err := migrate.New(
-		"file://internal/db/migrations",
+		"file://internal/migrations",
 		dsn,
 	)
 	if err != nil {
