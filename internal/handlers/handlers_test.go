@@ -43,7 +43,8 @@ func testRequest(
 
 func TestRouter(t *testing.T) {
 	f, _ := os.CreateTemp(os.TempDir(), "")
-	m := storage.New(300, f)
+	fb := storage.NewFileBackuper(f)
+	m := storage.NewMemStorage(300, fb)
 	_ = m.SetCounter("foo", 1)
 
 	ts := httptest.NewServer(Router(m))

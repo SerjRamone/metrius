@@ -13,6 +13,7 @@ type metricsStorage interface {
 	SetCounter(string, metrics.Counter) error
 	Counter(string) (metrics.Counter, bool)
 	Counters() map[string]metrics.Counter
+	BatchUpsert([]metrics.Metrics) error
 }
 
 // baseHandler base handler with storage inside
@@ -22,5 +23,7 @@ type baseHandler struct {
 
 // NewBaseHandler creates new baseHandler
 func NewBaseHandler(storage storage.Storage) baseHandler {
-	return baseHandler{storage: storage}
+	return baseHandler{
+		storage: storage,
+	}
 }

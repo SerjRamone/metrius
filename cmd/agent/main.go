@@ -22,6 +22,8 @@ func main() {
 		log.Fatal("can't init logger")
 	}
 
+	logger.Info("loaded config", zap.Object("config", &conf))
+
 	reportedAt := time.Now()
 	polledAt := time.Now()
 
@@ -40,7 +42,7 @@ func main() {
 		seconds = int((time.Since(reportedAt)).Seconds())
 		if seconds >= conf.ReportInterval {
 			if collections := collector.Export(); len(collections) > 0 {
-				err := sender.Send(collections)
+				err := sender.SendBatch(collections)
 				if err != nil {
 					logger.Error("sender error", zap.Error(err))
 				}

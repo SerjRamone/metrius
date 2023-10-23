@@ -7,9 +7,9 @@ import (
 )
 
 // Router returns chi.Router
-func Router(mS storage.MemStorage) chi.Router {
+func Router(s storage.Storage) chi.Router {
 	r := chi.NewRouter()
-	bHandler := NewBaseHandler(mS)
+	bHandler := NewBaseHandler(s)
 
 	r.Use(middlewares.RequestLogger)
 
@@ -17,9 +17,12 @@ func Router(mS storage.MemStorage) chi.Router {
 
 	r.Post("/value/", middlewares.GzipCompressor(bHandler.ValueJSON()))
 	r.Post("/update/", middlewares.GzipCompressor(bHandler.UpdateJSON()))
+	r.Post("/updates/", middlewares.GzipCompressor(bHandler.Updates()))
 
 	r.Get("/value/{type}/{name}", bHandler.Value())
 	r.Post("/update/{type}/{name}/{value}", bHandler.Update())
+
+	r.Get("/ping", bHandler.Ping())
 
 	return r
 }

@@ -5,6 +5,7 @@ import (
 	"flag"
 
 	"github.com/caarlos0/env"
+	"go.uber.org/zap/zapcore"
 )
 
 const (
@@ -20,11 +21,13 @@ const (
 	serverDefaultStoreInterval   = 300
 	serverDefaultFileStoragePath = "/tmp/metrics-db.json"
 	serverDefaultRestore         = true
+	serverDefaultDatabaseDSN     = ""
 
 	serverUsageAddress         = "address and port to run server"
 	serverUsageStoreInterval   = "period of time for put metrics to file"
 	serverUsageFileStoragePath = "path to file for store metrics"
 	serverUsageRestore         = "if true then server will resotre metrics from file storage"
+	serverUsageDatabaseDSN     = "data sourse string in format: \"host=host port=port user=myuser password=xxxx dbname=mydb sslmode=disable\""
 )
 
 // Agent contents config for Agent
@@ -55,12 +58,21 @@ func (c *Agent) parseEnv() error {
 	return env.Parse(c)
 }
 
+// MarshalLogObject zapcore.ObjectMarshaler implemet for loggin agent config struct
+func (c *Agent) MarshalLogObject(enc zapcore.ObjectEncoder) error {
+	enc.AddString("ServerAddress", c.ServerAddress)
+	enc.AddInt("ReportInterval", c.ReportInterval)
+	enc.AddInt("PollInterval", c.PollInterval)
+	return nil
+}
+
 // Server contents config for Server
 type Server struct {
 	Address         string `env:"ADDRESS"`
 	StoreInterval   int    `env:"STORE_INTERVAL"`
 	FileStoragePath string `env:"FILE_STORAGE_PATH"`
 	Restore         bool   `env:"RESTORE"`
+	DatabaseDSN     string `env:"DATABASE_DSN"`
 }
 
 // NewServer constructor for server config
@@ -76,6 +88,7 @@ func (c *Server) parseFlags() {
 	flag.IntVar(&c.StoreInterval, "i", serverDefaultStoreInterval, serverUsageStoreInterval)
 	flag.StringVar(&c.FileStoragePath, "f", serverDefaultFileStoragePath, serverUsageFileStoragePath)
 	flag.BoolVar(&c.Restore, "r", serverDefaultRestore, serverUsageRestore)
+	flag.StringVar(&c.DatabaseDSN, "d", serverDefaultDatabaseDSN, serverUsageDatabaseDSN)
 
 	flag.Parse()
 }
@@ -83,4 +96,14 @@ func (c *Server) parseFlags() {
 // parseEnv parse environtment variables
 func (c *Server) parseEnv() error {
 	return env.Parse(c)
+}
+
+// MarshalLogObject zapcore.ObjectMarshaler implemet for loggin server config struct
+func (c *Server) MarshalLogObject(enc zapcore.ObjectEncoder) error {
+	enc.AddString("Address", c.Address)
+	enc.AddInt("StoreInterval", c.StoreInterval)
+	enc.AddString("FileStoragePath", c.FileStoragePath)
+	enc.AddBool("Restore", c.Restore)
+	enc.AddString("DatabaseDSN", c.DatabaseDSN)
+	return nil
 }

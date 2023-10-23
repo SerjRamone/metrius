@@ -3,6 +3,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"os"
 	"os/signal"
@@ -13,6 +14,9 @@ import (
 	"github.com/SerjRamone/metrius/internal/handlers"
 	"github.com/SerjRamone/metrius/internal/storage"
 	"github.com/SerjRamone/metrius/pkg/logger"
+	"github.com/golang-migrate/migrate/v4"
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"go.uber.org/zap"
 )
 
@@ -30,16 +34,39 @@ func run() error {
 		return err
 	}
 
+	logger.Info("loaded config", zap.Object("config", &conf))
+
 	if err != nil {
 		logger.Fatal("config parse error: ", zap.Error(err))
 	}
 
-	backupFile, err := os.OpenFile(conf.FileStoragePath, os.O_RDWR|os.O_CREATE, 0666)
-	if err != nil {
-		return err
-	}
+	var backuper storage.BackupRestorer
+	var backupFile *os.File
+	var stor storage.Storage
 
-	mStorage := storage.New(conf.StoreInterval, backupFile)
+	if conf.DatabaseDSN != "" { // store metrics in database
+		stor, err = storage.NewSQLStorage(conf.DatabaseDSN)
+		if err != nil {
+			return err
+		}
+
+		// run Postgres migrations
+		logger.Info("running pg migrations")
+		if err := runPgMigrations(conf.DatabaseDSN); err != nil {
+			return err
+		}
+	} else { // store metrics in memory
+		backupFile, err = os.OpenFile(conf.FileStoragePath, os.O_RDWR|os.O_CREATE, 0666)
+		if err != nil {
+			return err
+		}
+
+		// backup to file
+		backuper = storage.NewFileBackuper(backupFile)
+
+		// init MemStorage
+		stor = storage.NewMemStorage(conf.StoreInterval, backuper)
+	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 
@@ -50,32 +77,32 @@ func run() error {
 	// creating server
 	server := &http.Server{
 		Addr:    conf.Address,
-		Handler: handlers.Router(mStorage),
+		Handler: handlers.Router(stor),
 	}
 
 	if conf.Restore {
-		if err := mStorage.Restore(); err != nil {
-			logger.Error("can't restore from file", zap.Error(err))
-			cancel()
+		if v, ok := stor.(storage.MemStorage); ok {
+			if err := v.Restore(); err != nil {
+				logger.Error("can't restore from file", zap.Error(err))
+				cancel()
+			}
 		}
 	}
 
 	if conf.StoreInterval != 0 {
-		go func() {
-			logger.Info("backuper started", zap.Int("StoreInterval", conf.StoreInterval))
-			storedAt := time.Now()
-			for {
-				seconds := int((time.Since(storedAt)).Seconds())
-				if seconds >= conf.StoreInterval {
-					if err := mStorage.Backup(); err != nil {
+		if v, ok := stor.(storage.MemStorage); ok {
+			go func() {
+				logger.Info("backuper started", zap.Int("StoreInterval", conf.StoreInterval))
+				ticker := time.NewTicker(time.Duration(conf.StoreInterval) * time.Second)
+				for {
+					<-ticker.C
+
+					if err := v.Backup(); err != nil {
 						logger.Error("backup error", zap.Error(err))
 					}
-					storedAt = time.Now()
 				}
-
-				time.Sleep(500 * time.Millisecond)
-			}
-		}()
+			}()
+		}
 	}
 
 	go func() {
@@ -103,13 +130,23 @@ func run() error {
 		}
 
 		// backup metrics
-		if err := mStorage.Backup(); err != nil {
-			logger.Error("backup error", zap.Error(err))
+		if v, ok := stor.(storage.MemStorage); ok {
+			if err := v.Backup(); err != nil {
+				logger.Error("backup error", zap.Error(err))
+			}
 		}
 
 		// close resources
-		if err := backupFile.Close(); err != nil {
-			logger.Error("backup file close error", zap.Error(err))
+		if backupFile != nil {
+			if err := backupFile.Close(); err != nil {
+				logger.Error("backup file close error", zap.Error(err))
+			}
+		}
+
+		if v, ok := stor.(storage.SQLStorage); ok {
+			if err := v.DBClose(); err != nil {
+				logger.Error("db closing error", zap.Error(err))
+			}
 		}
 
 	case <-ctx.Done():
@@ -117,5 +154,24 @@ func run() error {
 		return err
 	}
 
+	return nil
+}
+
+// runPgMigrations runs Postgres migrations
+func runPgMigrations(dsn string) error {
+	m, err := migrate.New(
+		"file://internal/migrations",
+		dsn,
+	)
+	if err != nil {
+		return err
+	}
+	if err := m.Up(); err != nil {
+		if errors.Is(err, migrate.ErrNoChange) {
+			logger.Info("no change made by migration scripts")
+			return nil
+		}
+		return err
+	}
 	return nil
 }
