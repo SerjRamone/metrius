@@ -77,7 +77,7 @@ func run() error {
 	// creating server
 	server := &http.Server{
 		Addr:    conf.Address,
-		Handler: handlers.Router(stor),
+		Handler: handlers.Router(stor, conf.HashKey),
 	}
 
 	if conf.Restore {

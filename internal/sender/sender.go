@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/SerjRamone/metrius/internal/metrics"
+	"github.com/SerjRamone/metrius/internal/middlewares"
 	"github.com/SerjRamone/metrius/pkg/logger"
 	"github.com/SerjRamone/metrius/pkg/retry"
 	"go.uber.org/zap"
@@ -21,13 +22,15 @@ import (
 
 // metricsSender ...
 type metricsSender struct {
-	sURL string
+	sURL    string
+	hashKey string
 }
 
 // NewMetricsSender crates MetricsSender
-func NewMetricsSender(sURL string) *metricsSender {
+func NewMetricsSender(sURL, hashKey string) *metricsSender {
 	return &metricsSender{
-		sURL: "http://" + sURL,
+		sURL:    "http://" + sURL,
+		hashKey: hashKey,
 	}
 }
 
@@ -93,11 +96,17 @@ func (sender *metricsSender) SendBatch(collections []metrics.Collection) error {
 		}
 
 		req, err := http.NewRequest("POST", url, &b)
-		req.Header.Set("Content-Type", "application/json")
-		req.Header.Set("Content-Encoding", "gzip")
 		if err != nil {
 			logger.Error("request object creation error", zap.Error(err))
 			return err
+		}
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Content-Encoding", "gzip")
+
+		if sender.hashKey != "" {
+			b64Hash := middlewares.CalcHash(b.Bytes(), []byte(sender.hashKey))
+			req.Header.Set("HashSHA256", b64Hash)
+			logger.Info("calculated body hash", zap.String("hash", b64Hash))
 		}
 
 		client := &http.Client{}
@@ -165,10 +174,16 @@ func (sender *metricsSender) sendMetrics(m metrics.CollectionItem) (*http.Respon
 		return nil, err
 	}
 	req, err := http.NewRequest("POST", url, &b)
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Content-Encoding", "gzip")
 	if err != nil {
 		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Content-Encoding", "gzip")
+
+	if sender.hashKey != "" {
+		b64Hash := middlewares.CalcHash(b.Bytes(), []byte(sender.hashKey))
+		req.Header.Set("HashSHA256", b64Hash)
+		logger.Info("calculated body hash", zap.String("hash", b64Hash))
 	}
 
 	client := &http.Client{}
@@ -179,11 +194,10 @@ func (sender *metricsSender) sendMetrics(m metrics.CollectionItem) (*http.Respon
 			err = retry.WithBackoff(func() error {
 				r, err := client.Do(req)
 				if err != nil {
-					return err
-				}
-				_, err = io.Copy(io.Discard, r.Body)
-				if err != nil {
-					return err
+					_, err = io.Copy(io.Discard, r.Body)
+					if err != nil {
+						return err
+					}
 				}
 				defer r.Body.Close()
 				return err

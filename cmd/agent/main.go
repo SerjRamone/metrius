@@ -27,7 +27,7 @@ func main() {
 	reportedAt := time.Now()
 	polledAt := time.Now()
 
-	sender := sender.NewMetricsSender(conf.ServerAddress)
+	sender := sender.NewMetricsSender(conf.ServerAddress, conf.HashKey)
 	collector := collect.New()
 
 	for {

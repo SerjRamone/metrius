@@ -7,17 +7,23 @@ import (
 )
 
 // Router returns chi.Router
-func Router(s storage.Storage) chi.Router {
+func Router(s storage.Storage, hashKey string) chi.Router {
 	r := chi.NewRouter()
 	bHandler := NewBaseHandler(s)
 
 	r.Use(middlewares.RequestLogger)
+	if hashKey != "" {
+		r.Use(middlewares.Signer(hashKey))
+	}
 
-	r.Get("/", middlewares.GzipCompressor(bHandler.List()))
-
-	r.Post("/value/", middlewares.GzipCompressor(bHandler.ValueJSON()))
-	r.Post("/update/", middlewares.GzipCompressor(bHandler.UpdateJSON()))
-	r.Post("/updates/", middlewares.GzipCompressor(bHandler.Updates()))
+	// with gzip compression
+	r.Group(func(r chi.Router) {
+		r.Use(middlewares.GzipCompressor)
+		r.Get("/", bHandler.List())
+		r.Post("/value/", bHandler.ValueJSON())
+		r.Post("/update/", bHandler.UpdateJSON())
+		r.Post("/updates/", bHandler.Updates())
+	})
 
 	r.Get("/value/{type}/{name}", bHandler.Value())
 	r.Post("/update/{type}/{name}/{value}", bHandler.Update())

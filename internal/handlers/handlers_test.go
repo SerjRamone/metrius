@@ -47,7 +47,7 @@ func TestRouter(t *testing.T) {
 	m := storage.NewMemStorage(300, fb)
 	_ = m.SetCounter("foo", 1)
 
-	ts := httptest.NewServer(Router(m))
+	ts := httptest.NewServer(Router(m, "testkey"))
 	defer ts.Close()
 
 	type want struct {

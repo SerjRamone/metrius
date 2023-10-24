@@ -12,22 +12,26 @@ const (
 	agentDefaultServerAddress  = "localhost:8080"
 	agentDefaultReportInterval = 10
 	agentDefaultPollInterval   = 2
+	agentDefaultHashKey        = ""
 
 	agentUsageServerAddress  = "address and port of metrics server"
 	agentUsageReportInterval = "period of time for sending data to server in seconds"
 	agentUsagePollInterval   = "period of time for collecting metrics values in seconds"
+	agentUsageHashKey        = "key string for hashing function"
 
 	serverDefaultAddress         = "localhost:8080"
 	serverDefaultStoreInterval   = 300
 	serverDefaultFileStoragePath = "/tmp/metrics-db.json"
 	serverDefaultRestore         = true
 	serverDefaultDatabaseDSN     = ""
+	serverDefaultHashKey         = ""
 
 	serverUsageAddress         = "address and port to run server"
 	serverUsageStoreInterval   = "period of time for put metrics to file"
 	serverUsageFileStoragePath = "path to file for store metrics"
 	serverUsageRestore         = "if true then server will resotre metrics from file storage"
 	serverUsageDatabaseDSN     = "data sourse string in format: \"host=host port=port user=myuser password=xxxx dbname=mydb sslmode=disable\""
+	serverUsageHashKey         = "key string for hashing function"
 )
 
 // Agent contents config for Agent
@@ -35,6 +39,7 @@ type Agent struct {
 	ServerAddress  string `env:"ADDRESS"`
 	ReportInterval int    `env:"REPORT_INTERVAL"`
 	PollInterval   int    `env:"POLL_INTERVAL"`
+	HashKey        string `env:"KEY"`
 }
 
 // NewAgent constructor for agent config
@@ -49,6 +54,7 @@ func (c *Agent) parseFlags() {
 	flag.StringVar(&c.ServerAddress, "a", agentDefaultServerAddress, agentUsageServerAddress)
 	flag.IntVar(&c.ReportInterval, "r", agentDefaultReportInterval, agentUsageReportInterval)
 	flag.IntVar(&c.PollInterval, "p", agentDefaultPollInterval, agentUsagePollInterval)
+	flag.StringVar(&c.HashKey, "k", agentDefaultHashKey, agentUsageHashKey)
 
 	flag.Parse()
 }
@@ -63,6 +69,7 @@ func (c *Agent) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	enc.AddString("ServerAddress", c.ServerAddress)
 	enc.AddInt("ReportInterval", c.ReportInterval)
 	enc.AddInt("PollInterval", c.PollInterval)
+	enc.AddString("HashKey", c.HashKey)
 	return nil
 }
 
@@ -73,6 +80,7 @@ type Server struct {
 	FileStoragePath string `env:"FILE_STORAGE_PATH"`
 	Restore         bool   `env:"RESTORE"`
 	DatabaseDSN     string `env:"DATABASE_DSN"`
+	HashKey         string `env:"KEY"`
 }
 
 // NewServer constructor for server config
@@ -89,6 +97,7 @@ func (c *Server) parseFlags() {
 	flag.StringVar(&c.FileStoragePath, "f", serverDefaultFileStoragePath, serverUsageFileStoragePath)
 	flag.BoolVar(&c.Restore, "r", serverDefaultRestore, serverUsageRestore)
 	flag.StringVar(&c.DatabaseDSN, "d", serverDefaultDatabaseDSN, serverUsageDatabaseDSN)
+	flag.StringVar(&c.HashKey, "k", serverDefaultHashKey, serverUsageHashKey)
 
 	flag.Parse()
 }
@@ -105,5 +114,6 @@ func (c *Server) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	enc.AddString("FileStoragePath", c.FileStoragePath)
 	enc.AddBool("Restore", c.Restore)
 	enc.AddString("DatabaseDSN", c.DatabaseDSN)
+	enc.AddString("HashKey", c.HashKey)
 	return nil
 }
