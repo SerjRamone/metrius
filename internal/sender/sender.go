@@ -53,6 +53,24 @@ func (sender *metricsSender) Send(collections []metrics.Collection) error {
 	return nil
 }
 
+// Worker is a async sender
+func (sender *metricsSender) Worker(doneCh chan struct{}, jobCh chan []metrics.Collection) {
+	logger.Info("worker started")
+	for {
+		select {
+		case collections := <-jobCh:
+			logger.Info("worker recived new collections")
+			err := sender.SendBatch(collections)
+			if err != nil {
+				logger.Error("async SendBatch error", zap.Error(err))
+			}
+		case <-doneCh:
+			logger.Info("worker recived done signal")
+			return
+		}
+	}
+}
+
 // SendBatch sends metrics in batches
 func (sender *metricsSender) SendBatch(collections []metrics.Collection) error {
 	batch := []metrics.Metrics{}

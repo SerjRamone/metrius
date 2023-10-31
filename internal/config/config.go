@@ -13,11 +13,13 @@ const (
 	agentDefaultReportInterval = 10
 	agentDefaultPollInterval   = 2
 	agentDefaultHashKey        = ""
+	agentDefaultRateLimit      = 1
 
 	agentUsageServerAddress  = "address and port of metrics server"
 	agentUsageReportInterval = "period of time for sending data to server in seconds"
 	agentUsagePollInterval   = "period of time for collecting metrics values in seconds"
 	agentUsageHashKey        = "key string for hashing function"
+	agentUsageRateLimit      = "number of synchronous outgoing requests"
 
 	serverDefaultAddress         = "localhost:8080"
 	serverDefaultStoreInterval   = 300
@@ -40,6 +42,7 @@ type Agent struct {
 	ReportInterval int    `env:"REPORT_INTERVAL"`
 	PollInterval   int    `env:"POLL_INTERVAL"`
 	HashKey        string `env:"KEY"`
+	RateLimit      int    `env:"RATE_LIMIT"`
 }
 
 // NewAgent constructor for agent config
@@ -55,6 +58,7 @@ func (c *Agent) parseFlags() {
 	flag.IntVar(&c.ReportInterval, "r", agentDefaultReportInterval, agentUsageReportInterval)
 	flag.IntVar(&c.PollInterval, "p", agentDefaultPollInterval, agentUsagePollInterval)
 	flag.StringVar(&c.HashKey, "k", agentDefaultHashKey, agentUsageHashKey)
+	flag.IntVar(&c.RateLimit, "l", agentDefaultRateLimit, agentUsageRateLimit)
 
 	flag.Parse()
 }
@@ -70,6 +74,7 @@ func (c *Agent) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	enc.AddInt("ReportInterval", c.ReportInterval)
 	enc.AddInt("PollInterval", c.PollInterval)
 	enc.AddString("HashKey", c.HashKey)
+	enc.AddInt("RateLimit", c.RateLimit)
 	return nil
 }
 
