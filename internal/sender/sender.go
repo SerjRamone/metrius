@@ -24,14 +24,48 @@ import (
 type metricsSender struct {
 	sURL    string
 	hashKey string
+	client  *http.Client
+}
+
+// request middleware transport
+type hashTripper struct {
+	hashKey string
+}
+
+// RoundTrip is RoundTripper implementation
+// Adds HashSHA256 header to request headers
+func (sender hashTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	var buf bytes.Buffer
+	// copy data from request body
+	_, err := io.Copy(&buf, req.Body)
+	if err != nil {
+		logger.Error("request body copy error", zap.Error(err))
+		return nil, err
+	}
+	// get bytes from buffer
+	b := buf.Bytes()
+	// set new body
+	req.Body = io.NopCloser(bytes.NewReader(b))
+	// calculate hash string
+	b64Hash := middlewares.CalcHash(b, []byte(sender.hashKey))
+	req.Header.Set("HashSHA256", b64Hash)
+	logger.Info("calculated body hash", zap.String("hash", b64Hash))
+	return http.DefaultTransport.RoundTrip(req)
 }
 
 // NewMetricsSender crates MetricsSender
 func NewMetricsSender(sURL, hashKey string) *metricsSender {
-	return &metricsSender{
+	sender := metricsSender{
 		sURL:    "http://" + sURL,
 		hashKey: hashKey,
+		client:  &http.Client{},
 	}
+
+	if sender.hashKey != "" {
+		logger.Info("requests with hash header")
+		sender.client.Transport = hashTripper{hashKey: hashKey}
+	}
+	return &sender
 }
 
 // Send whole Collection
@@ -121,19 +155,13 @@ func (sender *metricsSender) SendBatch(collections []metrics.Collection) error {
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Content-Encoding", "gzip")
 
-		if sender.hashKey != "" {
-			b64Hash := middlewares.CalcHash(b.Bytes(), []byte(sender.hashKey))
-			req.Header.Set("HashSHA256", b64Hash)
-			logger.Info("calculated body hash", zap.String("hash", b64Hash))
-		}
-
-		client := &http.Client{}
-		r, err := client.Do(req)
+		r, err := sender.client.Do(req)
 		if err != nil {
+			logger.Error("first request error", zap.Error(err))
 			var netError net.Error
 			if errors.As(err, &netError) {
 				err = retry.WithBackoff(func() error {
-					r, err := client.Do(req)
+					r, err := sender.client.Do(req)
 					if err != nil {
 						return err
 					}
@@ -198,19 +226,12 @@ func (sender *metricsSender) sendMetrics(m metrics.CollectionItem) (*http.Respon
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Content-Encoding", "gzip")
 
-	if sender.hashKey != "" {
-		b64Hash := middlewares.CalcHash(b.Bytes(), []byte(sender.hashKey))
-		req.Header.Set("HashSHA256", b64Hash)
-		logger.Info("calculated body hash", zap.String("hash", b64Hash))
-	}
-
-	client := &http.Client{}
-	r, err := client.Do(req)
+	r, err := sender.client.Do(req)
 	if err != nil {
 		var netError net.Error
 		if errors.As(err, &netError) {
 			err = retry.WithBackoff(func() error {
-				r, err := client.Do(req)
+				r, err := sender.client.Do(req)
 				if err != nil {
 					_, err = io.Copy(io.Discard, r.Body)
 					if err != nil {
