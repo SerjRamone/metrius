@@ -71,8 +71,8 @@ func (c *compressReader) Close() error {
 }
 
 // GzipCompressor compress middleware
-func GzipCompressor(next http.Handler) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func GzipCompressor(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// set original http.ResponseWriter as default for next handler
 		ow := w
 
@@ -104,5 +104,5 @@ func GzipCompressor(next http.Handler) http.HandlerFunc {
 		}
 
 		next.ServeHTTP(ow, r)
-	}
+	})
 }

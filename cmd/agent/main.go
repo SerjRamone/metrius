@@ -3,12 +3,18 @@ package main
 
 import (
 	"log"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	collect "github.com/SerjRamone/metrius/internal/collector"
 	"github.com/SerjRamone/metrius/internal/config"
+	"github.com/SerjRamone/metrius/internal/metrics"
 	"github.com/SerjRamone/metrius/internal/sender"
 	"github.com/SerjRamone/metrius/pkg/logger"
+	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v3/mem"
 	"go.uber.org/zap"
 )
 
@@ -24,33 +30,93 @@ func main() {
 
 	logger.Info("loaded config", zap.Object("config", &conf))
 
-	reportedAt := time.Now()
-	polledAt := time.Now()
-
-	sender := sender.NewMetricsSender(conf.ServerAddress)
+	sender := sender.NewMetricsSender(conf.ServerAddress, conf.HashKey)
 	collector := collect.New()
 
-	for {
-		// collect metrics
-		seconds := int((time.Since(polledAt)).Seconds())
-		if seconds >= conf.PollInterval {
-			collector.Collect()
-			polledAt = time.Now()
-		}
+	// closing channel
+	doneCh := make(chan struct{})
 
-		// send metrics
-		seconds = int((time.Since(reportedAt)).Seconds())
-		if seconds >= conf.ReportInterval {
-			if collections := collector.Export(); len(collections) > 0 {
-				err := sender.SendBatch(collections)
-				if err != nil {
-					logger.Error("sender error", zap.Error(err))
-				}
-			}
+	// catch signals
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 
-			reportedAt = time.Now()
-		}
+	// chan for jobs for senders
+	jobCh := make(chan []metrics.Collection)
 
-		time.Sleep(500 * time.Millisecond)
+	// run workers
+	for w := 1; w <= conf.RateLimit; w++ {
+		go sender.Worker(doneCh, jobCh)
 	}
+
+	// collect metrics
+	go func() {
+		ticker := time.NewTicker(time.Duration(conf.PollInterval) * time.Second)
+		for {
+			select {
+			case <-ticker.C:
+				collector.Collect()
+
+			case <-doneCh:
+				logger.Info("collector recived done signal")
+				return
+			}
+		}
+	}()
+
+	// additional metrics
+	go func() {
+		ticker := time.NewTicker(time.Duration(conf.ReportInterval) * time.Second)
+		for {
+			select {
+			case <-ticker.C:
+				logger.Info("collect additional metrics")
+				v, err := mem.VirtualMemory()
+				if err != nil {
+					logger.Error("getting memory metrics error", zap.Error(err))
+					continue
+				}
+				cpu, err := cpu.Percent(0, true)
+				if err != nil {
+					logger.Error("getting cpu metrics error", zap.Error(err))
+					continue
+				}
+				c := metrics.Collection{
+					metrics.CollectionItem{Name: "TotalMemory", Type: "gauge", Value: float64(v.Total)},
+					metrics.CollectionItem{Name: "FreeMemory", Type: "gauge", Value: float64(v.Free)},
+					metrics.CollectionItem{Name: "CPUutilization1", Type: "gauge", Value: cpu[0]},
+				}
+				collections := []metrics.Collection{c}
+				jobCh <- collections
+
+			case <-doneCh:
+				logger.Info("additional metrics recived done signal")
+				return
+			}
+		}
+	}()
+
+	// put jobs
+	go func() {
+		defer close(jobCh)
+		ticker := time.NewTicker(time.Duration(conf.ReportInterval) * time.Second)
+		for {
+			select {
+			case <-ticker.C:
+				if collections := collector.Export(); len(collections) > 0 {
+					jobCh <- collections
+				}
+
+			case <-doneCh:
+				logger.Info("sender recived done signal")
+				return
+			}
+		}
+	}()
+
+	<-sigCh
+	close(doneCh)
+	// waiting gorutines to stop
+	// maybe need to use WaitGroup
+	time.Sleep(1 * time.Second)
+	logger.Info("shutting down")
 }

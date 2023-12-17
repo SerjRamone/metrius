@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/SerjRamone/metrius/internal/metrics"
+	"github.com/SerjRamone/metrius/internal/middlewares"
 	"github.com/SerjRamone/metrius/pkg/logger"
 	"github.com/SerjRamone/metrius/pkg/retry"
 	"go.uber.org/zap"
@@ -21,14 +22,50 @@ import (
 
 // metricsSender ...
 type metricsSender struct {
-	sURL string
+	sURL    string
+	hashKey string
+	client  *http.Client
+}
+
+// request middleware transport
+type hashTripper struct {
+	hashKey string
+}
+
+// RoundTrip is RoundTripper implementation
+// Adds HashSHA256 header to request headers
+func (sender hashTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	var buf bytes.Buffer
+	// copy data from request body
+	_, err := io.Copy(&buf, req.Body)
+	if err != nil {
+		logger.Error("request body copy error", zap.Error(err))
+		return nil, err
+	}
+	// get bytes from buffer
+	b := buf.Bytes()
+	// set new body
+	req.Body = io.NopCloser(bytes.NewReader(b))
+	// calculate hash string
+	b64Hash := middlewares.CalcHash(b, []byte(sender.hashKey))
+	req.Header.Set("HashSHA256", b64Hash)
+	logger.Info("calculated body hash", zap.String("hash", b64Hash))
+	return http.DefaultTransport.RoundTrip(req)
 }
 
 // NewMetricsSender crates MetricsSender
-func NewMetricsSender(sURL string) *metricsSender {
-	return &metricsSender{
-		sURL: "http://" + sURL,
+func NewMetricsSender(sURL, hashKey string) *metricsSender {
+	sender := metricsSender{
+		sURL:    "http://" + sURL,
+		hashKey: hashKey,
+		client:  &http.Client{},
 	}
+
+	if sender.hashKey != "" {
+		logger.Info("requests with hash header")
+		sender.client.Transport = hashTripper{hashKey: hashKey}
+	}
+	return &sender
 }
 
 // Send whole Collection
@@ -48,6 +85,24 @@ func (sender *metricsSender) Send(collections []metrics.Collection) error {
 	}
 
 	return nil
+}
+
+// Worker is a async sender
+func (sender *metricsSender) Worker(doneCh chan struct{}, jobCh chan []metrics.Collection) {
+	logger.Info("worker started")
+	for {
+		select {
+		case collections := <-jobCh:
+			logger.Info("worker recived new collections")
+			err := sender.SendBatch(collections)
+			if err != nil {
+				logger.Error("async SendBatch error", zap.Error(err))
+			}
+		case <-doneCh:
+			logger.Info("worker recived done signal")
+			return
+		}
+	}
 }
 
 // SendBatch sends metrics in batches
@@ -93,20 +148,20 @@ func (sender *metricsSender) SendBatch(collections []metrics.Collection) error {
 		}
 
 		req, err := http.NewRequest("POST", url, &b)
-		req.Header.Set("Content-Type", "application/json")
-		req.Header.Set("Content-Encoding", "gzip")
 		if err != nil {
 			logger.Error("request object creation error", zap.Error(err))
 			return err
 		}
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Content-Encoding", "gzip")
 
-		client := &http.Client{}
-		r, err := client.Do(req)
+		r, err := sender.client.Do(req)
 		if err != nil {
+			logger.Error("first request error", zap.Error(err))
 			var netError net.Error
 			if errors.As(err, &netError) {
 				err = retry.WithBackoff(func() error {
-					r, err := client.Do(req)
+					r, err := sender.client.Do(req)
 					if err != nil {
 						return err
 					}
@@ -165,25 +220,23 @@ func (sender *metricsSender) sendMetrics(m metrics.CollectionItem) (*http.Respon
 		return nil, err
 	}
 	req, err := http.NewRequest("POST", url, &b)
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Content-Encoding", "gzip")
 	if err != nil {
 		return nil, err
 	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Content-Encoding", "gzip")
 
-	client := &http.Client{}
-	r, err := client.Do(req)
+	r, err := sender.client.Do(req)
 	if err != nil {
 		var netError net.Error
 		if errors.As(err, &netError) {
 			err = retry.WithBackoff(func() error {
-				r, err := client.Do(req)
+				r, err := sender.client.Do(req)
 				if err != nil {
-					return err
-				}
-				_, err = io.Copy(io.Discard, r.Body)
-				if err != nil {
-					return err
+					_, err = io.Copy(io.Discard, r.Body)
+					if err != nil {
+						return err
+					}
 				}
 				defer r.Body.Close()
 				return err
