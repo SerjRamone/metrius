@@ -1,4 +1,4 @@
-// Package retry
+// Package retry ...
 package retry
 
 import (

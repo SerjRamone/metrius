@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// @todo mayby content-type check
+// @todo maybe content-type check
 func testRequest(
 	t *testing.T,
 	ts *httptest.Server,

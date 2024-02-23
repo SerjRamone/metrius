@@ -3,6 +3,8 @@ package handlers
 import (
 	"github.com/SerjRamone/metrius/internal/middlewares"
 	"github.com/SerjRamone/metrius/internal/storage"
+
+	// "github.com/go-chi/chi/middleware"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -15,6 +17,8 @@ func Router(s storage.Storage, hashKey string) chi.Router {
 	if hashKey != "" {
 		r.Use(middlewares.Signer(hashKey))
 	}
+
+	// r.Mount("/debug", middleware.Profiler())
 
 	// with gzip compression
 	r.Group(func(r chi.Router) {
