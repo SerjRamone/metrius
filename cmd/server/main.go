@@ -118,19 +118,6 @@ func run() error {
 	case <-sigCh:
 		logger.Info("shutting down")
 
-		//////////////////////////////
-		// создаём файл журнала профилирования памяти
-		// fmem, err := os.Create(`profiles/server.base.pprof`)
-		// if err != nil {
-		// 	panic(err)
-		// }
-		// defer fmem.Close()
-		// runtime.GC() // получаем статистику по использованию памяти
-		// if err := pprof.WriteHeapProfile(fmem); err != nil {
-		// 	panic(err)
-		// }
-		//////////////////////////////
-
 		timeout := 3 * time.Second
 		ctx, cancel := context.WithTimeout(ctx, timeout)
 		defer cancel()

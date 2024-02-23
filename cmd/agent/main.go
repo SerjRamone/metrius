@@ -16,9 +16,6 @@ import (
 	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/mem"
 	"go.uber.org/zap"
-
-	"net/http"
-	_ "net/http/pprof"
 )
 
 func main() {
@@ -114,10 +111,6 @@ func main() {
 				return
 			}
 		}
-	}()
-
-	go func() {
-		_ = http.ListenAndServe(":8090", nil)
 	}()
 
 	<-sigCh
