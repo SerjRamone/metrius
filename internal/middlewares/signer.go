@@ -8,8 +8,9 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/SerjRamone/metrius/pkg/logger"
 	"go.uber.org/zap"
+
+	"github.com/SerjRamone/metrius/pkg/logger"
 )
 
 // Signer adds header with hash key

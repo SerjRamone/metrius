@@ -19,7 +19,7 @@ func Router(s storage.Storage, hashKey string) chi.Router {
 	}
 
 	// r.Mount("/debug", middleware.Profiler())
-  
+
 	// with gzip compression
 	r.Group(func(r chi.Router) {
 		r.Use(middlewares.GzipCompressor)

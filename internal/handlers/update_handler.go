@@ -7,10 +7,11 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/SerjRamone/metrius/internal/metrics"
-	"github.com/SerjRamone/metrius/pkg/logger"
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
+
+	"github.com/SerjRamone/metrius/internal/metrics"
+	"github.com/SerjRamone/metrius/pkg/logger"
 )
 
 // Update is a /update/ handler

@@ -3,9 +3,10 @@ package handlers
 import (
 	"net/http"
 
+	"go.uber.org/zap"
+
 	"github.com/SerjRamone/metrius/internal/storage"
 	"github.com/SerjRamone/metrius/pkg/logger"
-	"go.uber.org/zap"
 )
 
 // Ping is a /ping/ handler, DB connect healthcheck

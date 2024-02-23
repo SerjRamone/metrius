@@ -7,10 +7,11 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/SerjRamone/metrius/internal/metrics"
-	"github.com/SerjRamone/metrius/pkg/logger"
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
+
+	"github.com/SerjRamone/metrius/internal/metrics"
+	"github.com/SerjRamone/metrius/pkg/logger"
 )
 
 // Value handler handls GET "/value/counter/foo" requests

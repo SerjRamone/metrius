@@ -5,9 +5,10 @@ import (
 	"io"
 	"os"
 
+	"go.uber.org/zap"
+
 	"github.com/SerjRamone/metrius/internal/metrics"
 	"github.com/SerjRamone/metrius/pkg/logger"
-	"go.uber.org/zap"
 )
 
 // BackupRestorer different types of persistent storages

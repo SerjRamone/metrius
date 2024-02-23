@@ -4,9 +4,10 @@ import (
 	"errors"
 	"fmt"
 
+	"go.uber.org/zap"
+
 	"github.com/SerjRamone/metrius/internal/metrics"
 	"github.com/SerjRamone/metrius/pkg/logger"
-	"go.uber.org/zap"
 )
 
 var (

@@ -13,11 +13,12 @@ import (
 	"net/http"
 	"time"
 
+	"go.uber.org/zap"
+
 	"github.com/SerjRamone/metrius/internal/metrics"
 	"github.com/SerjRamone/metrius/internal/middlewares"
 	"github.com/SerjRamone/metrius/pkg/logger"
 	"github.com/SerjRamone/metrius/pkg/retry"
-	"go.uber.org/zap"
 )
 
 // metricsSender ...
