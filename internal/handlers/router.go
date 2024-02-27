@@ -8,7 +8,9 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-// Router returns chi.Router
+// Router creates and configures a chi.Router object.
+//   - s: an object satisfying the storage.Storage interface, used as a storage for metrics.
+//   - hashKey: a string representing the encryption key used for signing.
 func Router(s storage.Storage, hashKey string) chi.Router {
 	r := chi.NewRouter()
 	bHandler := NewBaseHandler(s)

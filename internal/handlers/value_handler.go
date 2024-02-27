@@ -14,7 +14,14 @@ import (
 	"github.com/SerjRamone/metrius/pkg/logger"
 )
 
-// Value handler handls GET "/value/counter/foo" requests
+// Value returns the current value of a metric in the response body.
+// It handles GET requests to the /value/{type}/{name} address.
+// It expects two GET parameters in the request: type and name, both mandatory.
+// Possible HTTP status codes returned:
+//   - 404 if the requested metric is not found.
+//   - 400 if the type is not equal to "gauge" or "counter".
+//   - 500 in case of a service error.
+//   - 200 if the requested value is found.
 func (bHandler baseHandler) Value() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var (
@@ -52,7 +59,23 @@ func (bHandler baseHandler) Value() http.HandlerFunc {
 	}
 }
 
-// Value handler handls GET "/value" requests with JSON-body
+// ValueJSON returns the current value of a metric in the response body as JSON.
+// It handles POST requests to the /value/ address.
+// It expects requests with Content-Type application/json.
+// Possible HTTP status codes returned:
+//   - 400 in the following cases:
+//     1. if Content-Type is not application/json.
+//     2. if an invalid JSON is passed in the request body.
+//   - 404 if the requested metric is not found.
+//   - 500 in case of a service error.
+//   - 200 if the requested value is found.
+//
+// Example request body:
+//
+//	{
+//	    "id": "GaugeBatchZip125",
+//	    "type": "gauge"
+//	}
 func (bHandler baseHandler) ValueJSON() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("Accept", "application/json")

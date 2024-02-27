@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -13,6 +14,26 @@ import (
 
 	"github.com/SerjRamone/metrius/internal/storage"
 )
+
+// stubResponseWriter используется для эмуляции http.ResponseWriter
+type stubResponseWriter struct {
+	body string
+	code int
+}
+
+func (w *stubResponseWriter) Header() http.Header {
+	return http.Header{}
+}
+
+func (w *stubResponseWriter) Write(b []byte) (int, error) {
+	w.body = string(b)
+	return len(b), nil
+}
+
+func (w *stubResponseWriter) WriteHeader(statusCode int) {
+	fmt.Println("stub writes HTTP-code: ", statusCode)
+	w.code = statusCode
+}
 
 // @todo maybe content-type check
 func testRequest(
@@ -241,4 +262,31 @@ func TestRouter(t *testing.T) {
 			}
 		})
 	}
+}
+
+func ExamplebaseHandler_Ping() {
+	tempFile, err := os.CreateTemp("", "example")
+	if err != nil {
+		fmt.Println("can't create temp file:", err)
+		return
+	}
+	defer tempFile.Close()
+
+	backuper := storage.NewFileBackuper(tempFile)
+
+	s := storage.NewMemStorage(300, backuper)
+	bHandler := NewBaseHandler(s)
+
+	req, err := http.NewRequest("GET", "/ping", nil)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	w := &stubResponseWriter{}
+
+	handler := bHandler.Ping()
+	handler(w, req)
+
+	fmt.Println("response body:", w.body, "response code:", w.code)
 }

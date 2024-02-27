@@ -9,7 +9,10 @@ import (
 	"github.com/SerjRamone/metrius/pkg/logger"
 )
 
-// Ping is a /ping/ handler, DB connect healthcheck
+// Ping handles GET requests to the /ping/ address, performing a health check of the database connection.
+// Possible response status codes:
+//   - 500 in case of an internal service error.
+//   - 418 in all other cases.
 func (bHandler baseHandler) Ping() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if v, ok := bHandler.storage.(storage.SQLStorage); ok {

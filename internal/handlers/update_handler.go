@@ -14,7 +14,16 @@ import (
 	"github.com/SerjRamone/metrius/pkg/logger"
 )
 
-// Update is a /update/ handler
+// Update handles POST requests to the /update/{type}/{name}/{value} address, updating the value of a metric.
+// It expects three parameters in the URL: value, type, and name, all of which are mandatory.
+// Possible HTTP status codes returned:
+//   - 404 if the name parameter is not provided.
+//   - 400 in the following cases:
+//     1. if type is not equal to "gauge" or "counter".
+//     2. if the value parameter is not provided.
+//     3. if the value parameter cannot be converted to a valid value of counter or gauge types.
+//   - 200 in case of successful metric update.
+//   - 500 in case of a service error.
 func (bHandler baseHandler) Update() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var (
@@ -79,7 +88,30 @@ func (bHandler baseHandler) Update() http.HandlerFunc {
 	}
 }
 
-// Updates is a /updates/ handler
+// Updates handles POST requests to the /updates/ address, allowing bulk updates of metric values in batches.
+// It expects requests with Content-Type application/json.
+// Possible HTTP status codes returned:
+//   - 400 in the following cases:
+//     1. if Content-Type is not application/json.
+//     2. if an invalid JSON is passed in the request body.
+//     3. if id, type, and delta/value are not correctly specified in the request body.
+//   - 200 in case of successful metric update.
+//
+// Example request body:
+// [
+//
+//	{
+//	    "id": "CounterBatchZip48",
+//	    "type": "counter",
+//	    "delta": 1495722356
+//	},
+//	{
+//	    "id": "GaugeBatchZip125",
+//	    "type": "gauge",
+//	    "value": 322489.8871640195
+//	}
+//
+// ]
 func (bHandler baseHandler) Updates() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("Accept", "application/json")
@@ -115,7 +147,24 @@ func (bHandler baseHandler) Updates() http.HandlerFunc {
 	}
 }
 
-// Update is a /update/ handler with JSON body
+// UpdateJSON handles POST requests to the /update/ address, updating the value of a metric.
+// It expects requests with Content-Type application/json.
+// Possible HTTP status codes returned:
+//   - 404 if the metric identifier is not provided.
+//   - 400 in the following cases:
+//     1. if Content-Type is not application/json.
+//     2. if an invalid JSON is passed in the request body.
+//     3. if id, type, and delta/value are not correctly specified in the request body.
+//   - 500 in case of an internal service error.
+//   - 200 in case of a successful metric update.
+//
+// Example request body:
+//
+//	{
+//	    "id": "foo12",
+//	    "type": "gauge",
+//	    "value": 1.001
+//	}
 func (bHandler baseHandler) UpdateJSON() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("Accept", "application/json")
