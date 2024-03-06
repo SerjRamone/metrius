@@ -8,14 +8,15 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v3/mem"
+	"go.uber.org/zap"
+
 	collect "github.com/SerjRamone/metrius/internal/collector"
 	"github.com/SerjRamone/metrius/internal/config"
 	"github.com/SerjRamone/metrius/internal/metrics"
 	"github.com/SerjRamone/metrius/internal/sender"
 	"github.com/SerjRamone/metrius/pkg/logger"
-	"github.com/shirou/gopsutil/v3/cpu"
-	"github.com/shirou/gopsutil/v3/mem"
-	"go.uber.org/zap"
 )
 
 func main() {

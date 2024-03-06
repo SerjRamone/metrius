@@ -8,7 +8,10 @@ import (
 	"text/template"
 )
 
-// List handles / requests. Displays HTML-table with all current metrics values
+// List handles GET requests to the root address (/) of the project, returning an HTML table with the current metric values.
+// Possible response status codes:
+//   - 500 in case of a service error.
+//   - 200 for a successful request.
 func (bHandler baseHandler) List() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const tmpl = `<html>

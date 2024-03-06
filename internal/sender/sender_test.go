@@ -9,8 +9,9 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/SerjRamone/metrius/internal/metrics"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/SerjRamone/metrius/internal/metrics"
 )
 
 func TestSend(t *testing.T) {

@@ -16,8 +16,11 @@ run-agent: build-agent
 
 stattest:
 	go vet -vettool=statictest ./...
+
+test:
+	go test -v -race ./...
 	
-autotests: build autotests14
+autotests: build autotest_up_to24
 	
 autotests1:
 	./metricstest -test.v -test.run=^TestIteration1$$ -agent-binary-path=cmd/agent/agent -binary-path=cmd/server/server
@@ -60,3 +63,6 @@ autotests13: autotests12
 
 autotests14: autotests13
 	./metricstest -test.v -test.run=^TestIteration14$$ -source-path=. -agent-binary-path=cmd/agent/agent -binary-path=cmd/server/server -server-port="8008" -database-dsn=$(DSN) -key="testkey"
+
+autotest_up_to24: autotests14
+	 go test -v -race ./...

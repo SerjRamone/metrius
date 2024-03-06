@@ -13,11 +13,12 @@ import (
 	"net/http"
 	"time"
 
+	"go.uber.org/zap"
+
 	"github.com/SerjRamone/metrius/internal/metrics"
 	"github.com/SerjRamone/metrius/internal/middlewares"
 	"github.com/SerjRamone/metrius/pkg/logger"
 	"github.com/SerjRamone/metrius/pkg/retry"
-	"go.uber.org/zap"
 )
 
 // metricsSender ...
@@ -107,7 +108,7 @@ func (sender *metricsSender) Worker(doneCh chan struct{}, jobCh chan []metrics.C
 
 // SendBatch sends metrics in batches
 func (sender *metricsSender) SendBatch(collections []metrics.Collection) error {
-	batch := []metrics.Metrics{}
+	batch := make([]metrics.Metrics, 0, 200)
 	// collect batch of metrics.Metrics
 	for _, c := range collections {
 		for _, m := range c {

@@ -6,13 +6,14 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/SerjRamone/metrius/internal/metrics"
-	"github.com/SerjRamone/metrius/pkg/logger"
-	"github.com/SerjRamone/metrius/pkg/retry"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"go.uber.org/zap"
+
+	"github.com/SerjRamone/metrius/internal/metrics"
+	"github.com/SerjRamone/metrius/pkg/logger"
+	"github.com/SerjRamone/metrius/pkg/retry"
 )
 
 var _ Storage = (*SQLStorage)(nil)

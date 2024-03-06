@@ -1,4 +1,4 @@
-// Package handlers ...
+// Package handlers provides HTTP request handlers used throughout the project.
 package handlers
 
 import (
@@ -21,7 +21,7 @@ type baseHandler struct {
 	storage metricsStorage
 }
 
-// NewBaseHandler creates new baseHandler
+// NewBaseHandler creates a new instance of the base handler with the specified data storage.
 func NewBaseHandler(storage storage.Storage) baseHandler {
 	return baseHandler{
 		storage: storage,

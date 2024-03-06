@@ -16,7 +16,7 @@ type collector struct {
 // New creates collector instance
 func New() *collector {
 	return &collector{
-		collections: make([]metrics.Collection, 5),
+		collections: make([]metrics.Collection, 0, 5),
 	}
 }
 
@@ -35,6 +35,6 @@ func (c *collector) Collect() {
 // Export returns collections and clear slice
 func (c *collector) Export() []metrics.Collection {
 	collections := c.collections
-	c.collections = make([]metrics.Collection, 5)
+	c.collections = make([]metrics.Collection, 0, 5)
 	return collections
 }

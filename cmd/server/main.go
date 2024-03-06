@@ -10,14 +10,15 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/SerjRamone/metrius/internal/config"
-	"github.com/SerjRamone/metrius/internal/handlers"
-	"github.com/SerjRamone/metrius/internal/storage"
-	"github.com/SerjRamone/metrius/pkg/logger"
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"go.uber.org/zap"
+
+	"github.com/SerjRamone/metrius/internal/config"
+	"github.com/SerjRamone/metrius/internal/handlers"
+	"github.com/SerjRamone/metrius/internal/storage"
+	"github.com/SerjRamone/metrius/pkg/logger"
 )
 
 func main() {
@@ -151,7 +152,7 @@ func run() error {
 
 	case <-ctx.Done():
 		logger.Error("context error", zap.Error(ctx.Err()))
-		return err
+		return ctx.Err()
 	}
 
 	return nil
