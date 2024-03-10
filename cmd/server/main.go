@@ -29,17 +29,16 @@ func main() {
 
 func run() error {
 	conf, err := config.NewServer()
+	if err != nil {
+		return err
+	}
 
 	flagLogLevel := "info"
-	if err := logger.Init(flagLogLevel); err != nil {
+	if err = logger.Init(flagLogLevel); err != nil {
 		return err
 	}
 
 	logger.Info("loaded config", zap.Object("config", &conf))
-
-	if err != nil {
-		logger.Fatal("config parse error: ", zap.Error(err))
-	}
 
 	var backuper storage.BackupRestorer
 	var backupFile *os.File
@@ -53,7 +52,7 @@ func run() error {
 
 		// run Postgres migrations
 		logger.Info("running pg migrations")
-		if err := runPgMigrations(conf.DatabaseDSN); err != nil {
+		if err = runPgMigrations(conf.DatabaseDSN); err != nil {
 			return err
 		}
 	} else { // store metrics in memory
@@ -120,11 +119,11 @@ func run() error {
 		logger.Info("shutting down")
 
 		timeout := 3 * time.Second
-		ctx, cancel := context.WithTimeout(ctx, timeout)
+		shutdownCtx, cancel := context.WithTimeout(ctx, timeout)
 		defer cancel()
 
 		// shutting down server
-		if err := server.Shutdown(ctx); err != nil {
+		if err := server.Shutdown(shutdownCtx); err != nil {
 			logger.Error("server shutting down error", zap.Error(err))
 		} else {
 			logger.Info("server shut down gracefully")

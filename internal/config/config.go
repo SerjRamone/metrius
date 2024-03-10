@@ -39,9 +39,9 @@ const (
 // Agent contents config for Agent
 type Agent struct {
 	ServerAddress  string `env:"ADDRESS"`
+	HashKey        string `env:"KEY"`
 	ReportInterval int    `env:"REPORT_INTERVAL"`
 	PollInterval   int    `env:"POLL_INTERVAL"`
-	HashKey        string `env:"KEY"`
 	RateLimit      int    `env:"RATE_LIMIT"`
 }
 
@@ -81,11 +81,11 @@ func (c *Agent) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 // Server contents config for Server
 type Server struct {
 	Address         string `env:"ADDRESS"`
-	StoreInterval   int    `env:"STORE_INTERVAL"`
 	FileStoragePath string `env:"FILE_STORAGE_PATH"`
-	Restore         bool   `env:"RESTORE"`
 	DatabaseDSN     string `env:"DATABASE_DSN"`
 	HashKey         string `env:"KEY"`
+	StoreInterval   int    `env:"STORE_INTERVAL"`
+	Restore         bool   `env:"RESTORE"`
 }
 
 // NewServer constructor for server config

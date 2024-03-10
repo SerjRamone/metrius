@@ -73,17 +73,17 @@ func TestRouter(t *testing.T) {
 	defer ts.Close()
 
 	type want struct {
-		statusCode   int
 		responseText string
+		statusCode   int
 	}
 
 	tests := []struct {
 		name        string
-		want        want
 		method      string
 		urlPath     string
 		contentType string
 		body        string
+		want        want
 	}{
 		{
 			name: "test #1 - 200 OK",

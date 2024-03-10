@@ -8,6 +8,9 @@ build-server:
 build-agent:
 	go build -o cmd/agent/agent cmd/agent/*.go
 
+build-linter:
+	go build -o staticlint cmd/staticlint/*.go
+
 run-server: build-server
 	./cmd/server/server -a="localhost:8080" -i=0 -d=$(DSN) -k=testkey
 

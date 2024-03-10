@@ -183,7 +183,7 @@ func (bHandler baseHandler) UpdateJSON() http.HandlerFunc {
 		}
 
 		var req metrics.Metrics
-		if err := json.Unmarshal(body, &req); err != nil {
+		if err = json.Unmarshal(body, &req); err != nil {
 			logger.Info("cannot decode request JSON body", zap.Error(err))
 			w.WriteHeader(http.StatusBadRequest)
 			return
@@ -206,7 +206,7 @@ func (bHandler baseHandler) UpdateJSON() http.HandlerFunc {
 
 		switch req.MType {
 		case "counter":
-			if err := bHandler.storage.SetCounter(req.ID, metrics.Counter(*req.Delta)); err != nil {
+			if err = bHandler.storage.SetCounter(req.ID, metrics.Counter(*req.Delta)); err != nil {
 				logger.Fatal("can't set counter", zap.Error(err))
 				return
 			}
@@ -222,7 +222,7 @@ func (bHandler baseHandler) UpdateJSON() http.HandlerFunc {
 			req.Delta = &intValue
 
 		case "gauge":
-			if err := bHandler.storage.SetGauge(req.ID, metrics.Gauge(*req.Value)); err != nil {
+			if err = bHandler.storage.SetGauge(req.ID, metrics.Gauge(*req.Value)); err != nil {
 				logger.Fatal("can't set gauge", zap.Error(err))
 				return
 			}

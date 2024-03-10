@@ -23,9 +23,9 @@ import (
 
 // metricsSender ...
 type metricsSender struct {
+	client  *http.Client
 	sURL    string
 	hashKey string
-	client  *http.Client
 }
 
 // request middleware transport
@@ -162,7 +162,7 @@ func (sender *metricsSender) SendBatch(collections []metrics.Collection) error {
 			var netError net.Error
 			if errors.As(err, &netError) {
 				err = retry.WithBackoff(func() error {
-					r, err := sender.client.Do(req)
+					r, err = sender.client.Do(req)
 					if err != nil {
 						return err
 					}
@@ -232,7 +232,7 @@ func (sender *metricsSender) sendMetrics(m metrics.CollectionItem) (*http.Respon
 		var netError net.Error
 		if errors.As(err, &netError) {
 			err = retry.WithBackoff(func() error {
-				r, err := sender.client.Do(req)
+				r, err = sender.client.Do(req)
 				if err != nil {
 					_, err = io.Copy(io.Discard, r.Body)
 					if err != nil {
