@@ -2,6 +2,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -19,7 +20,15 @@ import (
 	"github.com/SerjRamone/metrius/pkg/logger"
 )
 
+var (
+	buildVersion string
+	buildDate    string
+	buildCommit  string
+)
+
 func main() {
+	printTags()
+
 	conf, err := config.NewAgent()
 	if err != nil {
 		log.Fatal("config parse error: ", err)
@@ -120,4 +129,10 @@ func main() {
 	// maybe need to use WaitGroup
 	time.Sleep(1 * time.Second)
 	logger.Info("shutting down")
+}
+
+func printTags() {
+	fmt.Printf("Build version: %s\n", buildVersion)
+	fmt.Printf("Build date: %s\n", buildDate)
+	fmt.Printf("Build commit: %s\n", buildCommit)
 }
