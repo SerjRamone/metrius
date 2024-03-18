@@ -43,24 +43,36 @@ func run(pass *analysis.Pass) (interface{}, error) {
 				continue
 			}
 			// handle func declarations
-			// in func main() package main
-			if f.Name.Name == "main" && pass.Pkg.Name() == "main" {
-				ast.Inspect(f.Body, func(x ast.Node) bool {
-					if callExpr, ok := x.(*ast.CallExpr); ok {
-						if ident, ok := callExpr.Fun.(*ast.SelectorExpr); ok {
-							// here is os.Exit() call
-							pkg, ok := ident.X.(*ast.Ident)
-							if ok {
-								if ident.Sel.Name == "Exit" && pkg.Name == "os" {
-									pos := pass.Fset.Position(x.Pos())
-									pass.Reportf(x.Pos(), "direct call to os.Exit() found in func main() at %s:%d", pos.Filename, pos.Line)
-								}
-							}
-						}
-					}
-					return true
-				})
+			// skip not main package and main() func
+			if f.Name.Name != "main" || pass.Pkg.Name() != "main" {
+				continue
 			}
+
+			ast.Inspect(f.Body, func(x ast.Node) bool {
+				callExpr, ok := x.(*ast.CallExpr)
+				if !ok {
+					return true
+				}
+
+				ident, ok := callExpr.Fun.(*ast.SelectorExpr)
+				if !ok {
+					return true
+				}
+
+				// here is os.Exit() call
+				pkg, ok := ident.X.(*ast.Ident)
+				if !ok {
+					return true
+				}
+
+				if ident.Sel.Name == "Exit" && pkg.Name == "os" {
+					pos := pass.Fset.Position(x.Pos())
+					pass.Reportf(x.Pos(), "direct call to os.Exit() found in func main() at %s:%d", pos.Filename, pos.Line)
+				}
+
+				return true
+			})
+
 		}
 	}
 	return nil, nil
