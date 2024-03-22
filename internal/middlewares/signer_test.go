@@ -16,8 +16,8 @@ func TestSignerMiddleware(t *testing.T) {
 	validHash := CalcHash(bodyBytes, []byte(testKey))
 	testCases := []struct {
 		name               string
-		requestBody        []byte
 		requestHash        string
+		requestBody        []byte
 		expectedStatusCode int
 	}{
 		{

@@ -94,7 +94,7 @@ func (bHandler baseHandler) ValueJSON() http.HandlerFunc {
 		}
 
 		var req metrics.Metrics
-		if err := json.Unmarshal(body, &req); err != nil {
+		if err = json.Unmarshal(body, &req); err != nil {
 			logger.Info("cannot decode request JSON body", zap.Error(err))
 			w.WriteHeader(http.StatusBadRequest)
 			return

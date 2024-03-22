@@ -1,12 +1,26 @@
 DSN = 'postgres://postgres:postgres@localhost:5432/metrius?sslmode=disable'
+DATE = $(shell date +'%Y/%m/%d %H:%M:%S')
+COMMIT = $(shell git rev-parse --short HEAD)
 	
+# f.e. make build VERSION=0.0.1
 build: build-agent build-server
 
+# f.e. make build-server VERSION=0.0.1
 build-server:
-	go build -o cmd/server/server cmd/server/*.go
+	go build \
+		-ldflags "-X main.buildVersion=$(VERSION) -X 'main.buildDate=$(DATE)' -X 'main.buildCommit=$(COMMIT)'" \
+		-o cmd/server/server \
+		cmd/server/*.go
 
+# f.e. make build-agent VERSION=0.0.1
 build-agent:
-	go build -o cmd/agent/agent cmd/agent/*.go
+	go build \
+		-ldflags "-X main.buildVersion=$(VERSION) -X 'main.buildDate=$(DATE)' -X 'main.buildCommit=$(COMMIT)'" \
+		-o cmd/agent/agent \
+		cmd/agent/*.go
+
+build-linter:
+	go build -o staticlint cmd/staticlint/*.go
 
 run-server: build-server
 	./cmd/server/server -a="localhost:8080" -i=0 -d=$(DSN) -k=testkey
@@ -16,6 +30,7 @@ run-agent: build-agent
 
 stattest:
 	go vet -vettool=statictest ./...
+	./staticlint ./...
 
 test:
 	go test -v -race ./...

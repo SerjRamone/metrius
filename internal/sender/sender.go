@@ -23,9 +23,9 @@ import (
 
 // metricsSender ...
 type metricsSender struct {
+	client  *http.Client
 	sURL    string
 	hashKey string
-	client  *http.Client
 }
 
 // request middleware transport
@@ -162,16 +162,16 @@ func (sender *metricsSender) SendBatch(collections []metrics.Collection) error {
 			var netError net.Error
 			if errors.As(err, &netError) {
 				err = retry.WithBackoff(func() error {
-					r, err := sender.client.Do(req)
-					if err != nil {
-						return err
+					retrResp, retrErr := sender.client.Do(req)
+					if retrErr != nil {
+						return retrErr
 					}
-					_, err = io.Copy(io.Discard, r.Body)
-					if err != nil {
-						logger.Error("io.Copy error", zap.Error(err))
+					_, retrErr = io.Copy(io.Discard, retrResp.Body)
+					if retrErr != nil {
+						logger.Error("io.Copy error", zap.Error(retrErr))
 					}
-					defer r.Body.Close()
-					return err
+					defer retrResp.Body.Close()
+					return retrErr
 				}, 3)
 				return err
 			}
@@ -232,15 +232,15 @@ func (sender *metricsSender) sendMetrics(m metrics.CollectionItem) (*http.Respon
 		var netError net.Error
 		if errors.As(err, &netError) {
 			err = retry.WithBackoff(func() error {
-				r, err := sender.client.Do(req)
-				if err != nil {
-					_, err = io.Copy(io.Discard, r.Body)
-					if err != nil {
-						return err
+				retrResp, retrErr := sender.client.Do(req)
+				if retrErr != nil {
+					_, retrErr = io.Copy(io.Discard, retrResp.Body)
+					if retrErr != nil {
+						return retrErr
 					}
 				}
-				defer r.Body.Close()
-				return err
+				defer retrResp.Body.Close()
+				return retrErr
 			}, 3)
 			return r, err
 		}

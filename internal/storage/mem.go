@@ -17,10 +17,10 @@ var (
 
 // MemStorage is a in-memory storage
 type MemStorage struct {
+	backuper      BackupRestorer
 	gauges        map[string]metrics.Gauge
 	counters      map[string]metrics.Counter
 	storeInterval int
-	backuper      BackupRestorer
 }
 
 // NewMemStorage is a constructor of MemStorage storage

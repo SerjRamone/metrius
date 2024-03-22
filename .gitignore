@@ -29,3 +29,6 @@ metricstest
 
 # statictest
 statictest
+
+# my custom linter
+/staticlint

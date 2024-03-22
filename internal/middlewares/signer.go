@@ -60,8 +60,8 @@ func CalcHash(body, key []byte) string {
 
 type signResponseWriter struct {
 	http.ResponseWriter
-	HashKey string
 	Body    *bytes.Buffer
+	HashKey string
 }
 
 func (rw *signResponseWriter) Write(b []byte) (int, error) {
