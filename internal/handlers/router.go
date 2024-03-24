@@ -11,13 +11,16 @@ import (
 // Router creates and configures a chi.Router object.
 //   - s: an object satisfying the storage.Storage interface, used as a storage for metrics.
 //   - hashKey: a string representing the encryption key used for signing.
-func Router(s storage.Storage, hashKey string) chi.Router {
+func Router(s storage.Storage, hashKey string, privKey []byte) chi.Router {
 	r := chi.NewRouter()
 	bHandler := NewBaseHandler(s)
 
 	r.Use(middlewares.RequestLogger)
 	if hashKey != "" {
 		r.Use(middlewares.Signer(hashKey))
+	}
+	if len(privKey) > 0 {
+		r.Use(middlewares.Crypto(privKey))
 	}
 
 	// r.Mount("/debug", middleware.Profiler())

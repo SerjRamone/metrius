@@ -34,13 +34,22 @@ func main() {
 		log.Fatal("config parse error: ", err)
 	}
 
-	if err := logger.Init("info"); err != nil {
+	if err = logger.Init("info"); err != nil {
 		log.Fatal("can't init logger")
 	}
 
 	logger.Info("loaded config", zap.Object("config", &conf))
 
-	sender := sender.NewMetricsSender(conf.ServerAddress, conf.HashKey)
+	var pubKey []byte
+	// check path and read key
+	if conf.CryptoKey != "" {
+		pubKey, err = os.ReadFile(conf.CryptoKey)
+		if err != nil {
+			logger.Error("reading keyfile error", zap.Error(err))
+			return
+		}
+	}
+	sender := sender.NewMetricsSender(conf.ServerAddress, conf.HashKey, pubKey)
 	collector := collect.New()
 
 	// closing channel
