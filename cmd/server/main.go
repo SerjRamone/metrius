@@ -77,6 +77,15 @@ func run() error {
 		stor = storage.NewMemStorage(conf.StoreInterval, backuper)
 	}
 
+	var privKey []byte
+	if conf.CryptoKey != "" {
+		privKey, err = os.ReadFile(conf.CryptoKey)
+		if err != nil {
+			logger.Error("reading keyfile error", zap.Error(err))
+			return err
+		}
+	}
+
 	ctx, cancel := context.WithCancel(context.Background())
 
 	// catch signals
@@ -86,7 +95,7 @@ func run() error {
 	// creating server
 	server := &http.Server{
 		Addr:    conf.Address,
-		Handler: handlers.Router(stor, conf.HashKey),
+		Handler: handlers.Router(stor, conf.HashKey, privKey),
 	}
 
 	if conf.Restore {

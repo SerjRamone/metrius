@@ -42,7 +42,8 @@ func TestSend(t *testing.T) {
 	if err != nil {
 		log.Fatal("can't parse testserver url", err)
 	}
-	sender := NewMetricsSender(u.Host, "testkey")
+	var pubKey []byte
+	sender := NewMetricsSender(u.Host, "testkey", pubKey)
 	err = sender.Send(c)
 	assert.NoError(t, err)
 	// assert.Equal(t, http.StatusOK, resp.StatusCode)

@@ -32,3 +32,6 @@ statictest
 
 # my custom linter
 /staticlint
+
+# keys
+keys/*
