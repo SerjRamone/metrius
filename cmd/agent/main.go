@@ -57,7 +57,7 @@ func main() {
 
 	// catch signals
 	sigCh := make(chan os.Signal, 1)
-	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 
 	// chan for jobs for senders
 	jobCh := make(chan []metrics.Collection)
@@ -127,6 +127,9 @@ func main() {
 
 			case <-doneCh:
 				logger.Info("sender recived done signal")
+				if collections := collector.Export(); len(collections) > 0 {
+					jobCh <- collections
+				}
 				return
 			}
 		}

@@ -78,6 +78,13 @@ func (sender *metricsSender) Worker(doneCh chan struct{}, jobCh chan []metrics.C
 			}
 		case <-doneCh:
 			logger.Info("worker recived done signal")
+			collections := <-jobCh
+			if len(collections) > 0 {
+				err := sender.SendBatch(collections)
+				if err != nil {
+					logger.Error("async SendBatch error", zap.Error(err))
+				}
+			}
 			return
 		}
 	}
