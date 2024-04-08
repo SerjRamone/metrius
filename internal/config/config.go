@@ -3,8 +3,8 @@ package config
 
 import (
 	"encoding/json"
-	"errors"
 	"flag"
+	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -48,8 +48,6 @@ const (
 	serverUsageCryptoKey       = "path to the private key file"
 	serverUsageConfig          = "path to config.json file"
 )
-
-var errTypeAssertion = errors.New("type assesrtion error")
 
 // Agent contents config for Agent
 type Agent struct {
@@ -100,12 +98,12 @@ func (c *Agent) parseEnv() error {
 func (c *Agent) parseFile() error {
 	bytes, err := os.ReadFile(c.Config)
 	if err != nil {
-		return err
+		return fmt.Errorf("reading config file <%s> error: %w", c.Config, err)
 	}
 	var tmp map[string]any
 	err = json.Unmarshal(bytes, &tmp)
 	if err != nil {
-		return err
+		return fmt.Errorf("unmarshal error: %w", err)
 	}
 
 	var ok bool
@@ -113,43 +111,35 @@ func (c *Agent) parseFile() error {
 		if param == "address" && c.ServerAddress == agentDefaultServerAddress {
 			c.ServerAddress, ok = val.(string)
 			if !ok {
-				return errTypeAssertion
+				return fmt.Errorf("expected type string for ServerAddress, received: %T", val)
 			}
 		}
 		if param == "report_interval" && c.ReportInterval == agentDefaultReportInterval {
 			var v string
 			v, ok = val.(string)
 			if !ok {
-				return errTypeAssertion
+				return fmt.Errorf("expected type string for ReportInterval, received: %T", val)
 			}
-			if strings.HasSuffix(v, "s") {
-				v, _ = strings.CutSuffix(v, "s")
-			}
-			if interval, err := strconv.Atoi(v); err == nil {
-				c.ReportInterval = interval
-			} else {
-				return err
+			c.ReportInterval, err = parseInterval(v)
+			if err != nil {
+				return fmt.Errorf("parseInterval value <%s> error: %w", v, err)
 			}
 		}
 		if param == "poll_interval" && c.PollInterval == agentDefaultPollInterval {
 			var v string
 			v, ok = val.(string)
 			if !ok {
-				return errTypeAssertion
+				return fmt.Errorf("expected type string for PollInterval, received: %T", val)
 			}
-			if strings.HasSuffix(v, "s") {
-				v, _ = strings.CutSuffix(v, "s")
-			}
-			if interval, err := strconv.Atoi(v); err == nil {
-				c.PollInterval = interval
-			} else {
-				return err
+			c.PollInterval, err = parseInterval(v)
+			if err != nil {
+				return fmt.Errorf("parseInterval value <%s> error: %w", v, err)
 			}
 		}
 		if param == "crypto_key" && c.CryptoKey == agentDefaultCryptoKey {
 			c.CryptoKey, ok = val.(string)
 			if !ok {
-				return errTypeAssertion
+				return fmt.Errorf("expected type string for CryptoKey, received: %T", val)
 			}
 		}
 	}
@@ -219,12 +209,12 @@ func (c *Server) parseEnv() error {
 func (c *Server) parseFile() error {
 	bytes, err := os.ReadFile(c.Config)
 	if err != nil {
-		return err
+		return fmt.Errorf("reading config file <%s> error: %w", c.Config, err)
 	}
 	var tmp map[string]any
 	err = json.Unmarshal(bytes, &tmp)
 	if err != nil {
-		return err
+		return fmt.Errorf("unmarshal error: %w", err)
 	}
 
 	var ok bool
@@ -232,46 +222,42 @@ func (c *Server) parseFile() error {
 		if param == "address" && c.Address == serverDefaultAddress {
 			c.Address, ok = val.(string)
 			if !ok {
-				return errTypeAssertion
+				return fmt.Errorf("expected type string for Address, received: %T", val)
 			}
 		}
 		if param == "restore" && c.Restore { // c.Restore is true by default
 			c.Restore, ok = val.(bool)
 			if !ok {
-				return errTypeAssertion
+				return fmt.Errorf("expected type bool for Restore, received: %T", val)
 			}
 		}
 		if param == "store_interval" && c.StoreInterval == serverDefaultStoreInterval {
 			var v string
 			v, ok = val.(string)
 			if !ok {
-				return errTypeAssertion
+				return fmt.Errorf("expected type string for StoreInterval, received: %T", val)
 			}
-			if strings.HasSuffix(v, "s") {
-				v, _ = strings.CutSuffix(val.(string), "s")
-			}
-			if interval, err := strconv.Atoi(v); err == nil {
-				c.StoreInterval = interval
-			} else {
-				return err
+			c.StoreInterval, err = parseInterval(v)
+			if err != nil {
+				return fmt.Errorf("parseInterval value <%s> error: %w", v, err)
 			}
 		}
 		if param == "store_file" && c.FileStoragePath == serverDefaultFileStoragePath {
 			c.FileStoragePath, ok = val.(string)
 			if !ok {
-				return errTypeAssertion
+				return fmt.Errorf("expected type string for FileStoragePath, received: %T", val)
 			}
 		}
 		if param == "database_dsn" && c.DatabaseDSN == serverDefaultDatabaseDSN {
 			c.DatabaseDSN, ok = val.(string)
 			if !ok {
-				return errTypeAssertion
+				return fmt.Errorf("expected type string for DatabaseDSN, received: %T", val)
 			}
 		}
 		if param == "crypto_key" && c.CryptoKey == serverDefaultCryptoKey {
 			c.CryptoKey, ok = val.(string)
 			if !ok {
-				return errTypeAssertion
+				return fmt.Errorf("expected type string for CryptoKey, received: %T", val)
 			}
 		}
 	}
@@ -289,4 +275,16 @@ func (c *Server) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	enc.AddString("CryptoKey", c.CryptoKey)
 	enc.AddString("Config", c.Config)
 	return nil
+}
+
+// parseInterval parse string interval to int interval value
+func parseInterval(v string) (int, error) {
+	if strings.HasSuffix(v, "s") {
+		v, _ = strings.CutSuffix(v, "s")
+	}
+	if interval, err := strconv.Atoi(v); err == nil {
+		return interval, nil
+	} else {
+		return 0, err
+	}
 }

@@ -81,8 +81,7 @@ func run() error {
 	if conf.CryptoKey != "" {
 		privKey, err = os.ReadFile(conf.CryptoKey)
 		if err != nil {
-			logger.Error("reading keyfile error", zap.Error(err))
-			return err
+			logger.Fatal("reading keyfile error", zap.Error(err))
 		}
 	}
 

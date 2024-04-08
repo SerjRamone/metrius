@@ -18,7 +18,11 @@ import (
 func Crypto(privKey []byte) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			bodyBytes, _ := io.ReadAll(r.Body)
+			bodyBytes, err := io.ReadAll(r.Body)
+			if err != nil {
+				logger.Error("parsing key error", zap.Error(err))
+				return
+			}
 			r.Body.Close()
 
 			// parse pem-encoded key

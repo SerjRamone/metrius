@@ -45,8 +45,7 @@ func main() {
 	if conf.CryptoKey != "" {
 		pubKey, err = os.ReadFile(conf.CryptoKey)
 		if err != nil {
-			logger.Error("reading keyfile error", zap.Error(err))
-			return
+			logger.Fatal("reading keyfile error", zap.Error(err))
 		}
 	}
 	sender := sender.NewMetricsSender(conf.ServerAddress, conf.HashKey, pubKey)
