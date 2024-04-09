@@ -20,7 +20,8 @@ func Crypto(privKey []byte) func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			bodyBytes, err := io.ReadAll(r.Body)
 			if err != nil {
-				logger.Error("parsing key error", zap.Error(err))
+				w.WriteHeader(http.StatusInternalServerError)
+				logger.Error("request body reading error", zap.Error(err))
 				return
 			}
 			r.Body.Close()
@@ -29,6 +30,7 @@ func Crypto(privKey []byte) func(http.Handler) http.Handler {
 			block, _ := pem.Decode(privKey)
 			key, err := x509.ParsePKCS1PrivateKey(block.Bytes)
 			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
 				logger.Error("parsing key error", zap.Error(err))
 				return
 			}
@@ -47,6 +49,7 @@ func Crypto(privKey []byte) func(http.Handler) http.Handler {
 
 				decryptedBlockBytes, err := key.Decrypt(nil, bodyBytes[start:finish], &rsa.OAEPOptions{Hash: crypto.SHA512})
 				if err != nil {
+					w.WriteHeader(http.StatusInternalServerError)
 					logger.Error("decrypt error", zap.Error(err))
 					return
 				}
