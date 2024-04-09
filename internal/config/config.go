@@ -38,6 +38,7 @@ const (
 	serverDefaultHashKey         = ""
 	serverDefaultCryptoKey       = ""
 	serverDefaultConfig          = ""
+	serverDefaultTrustedSubnet   = ""
 
 	serverUsageAddress         = "address and port to run server"
 	serverUsageStoreInterval   = "period of time for put metrics to file"
@@ -47,6 +48,7 @@ const (
 	serverUsageHashKey         = "key string for hashing function"
 	serverUsageCryptoKey       = "path to the private key file"
 	serverUsageConfig          = "path to config.json file"
+	serverUsageTrustedSubnet   = "CIDR"
 )
 
 var errTypeAssertion = errors.New("type assesrtion error")
@@ -178,6 +180,7 @@ type Server struct {
 	StoreInterval   int    `env:"STORE_INTERVAL" json:"store_interval"`
 	Restore         bool   `env:"RESTORE" json:"restore"`
 	Config          string `env:"CONFIG"`
+	TrustedSubnet   string `env:"TRUSTED_SUBNET"`
 }
 
 // NewServer constructor for server config
@@ -206,6 +209,7 @@ func (c *Server) parseFlags() {
 	flag.StringVar(&c.CryptoKey, "crypto-key", serverDefaultCryptoKey, serverUsageCryptoKey)
 	flag.StringVar(&c.Config, "c", serverDefaultConfig, serverUsageConfig)
 	flag.StringVar(&c.Config, "config", serverDefaultConfig, serverUsageConfig)
+	flag.StringVar(&c.TrustedSubnet, "t", serverDefaultTrustedSubnet, serverUsageTrustedSubnet)
 
 	flag.Parse()
 }
@@ -274,6 +278,12 @@ func (c *Server) parseFile() error {
 				return errTypeAssertion
 			}
 		}
+		if param == "trusted_subnet" && c.CryptoKey == serverDefaultTrustedSubnet {
+			c.TrustedSubnet, ok = val.(string)
+			if !ok {
+				return errTypeAssertion
+			}
+		}
 	}
 	return nil
 }
@@ -288,5 +298,6 @@ func (c *Server) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	enc.AddString("HashKey", c.HashKey)
 	enc.AddString("CryptoKey", c.CryptoKey)
 	enc.AddString("Config", c.Config)
+	enc.AddString("TrustedSubnet", c.TrustedSubnet)
 	return nil
 }

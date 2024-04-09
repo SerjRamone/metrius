@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"net"
+
 	"github.com/SerjRamone/metrius/internal/middlewares"
 	"github.com/SerjRamone/metrius/internal/storage"
 
@@ -11,7 +13,9 @@ import (
 // Router creates and configures a chi.Router object.
 //   - s: an object satisfying the storage.Storage interface, used as a storage for metrics.
 //   - hashKey: a string representing the encryption key used for signing.
-func Router(s storage.Storage, hashKey string, privKey []byte) chi.Router {
+//   - privKey: a slice of bytes with private key for decrypt request body
+//   - trustedSubnet: an IPNet represents an IP network
+func Router(s storage.Storage, hashKey string, privKey []byte, trustedSubnet *net.IPNet) chi.Router {
 	r := chi.NewRouter()
 	bHandler := NewBaseHandler(s)
 
@@ -21,6 +25,9 @@ func Router(s storage.Storage, hashKey string, privKey []byte) chi.Router {
 	}
 	if len(privKey) > 0 {
 		r.Use(middlewares.Crypto(privKey))
+	}
+	if trustedSubnet != nil {
+		r.Use(middlewares.IPWhitelist(trustedSubnet))
 	}
 
 	// r.Mount("/debug", middleware.Profiler())

@@ -25,6 +25,7 @@ type metricsSender struct {
 	sURL    string
 	hashKey string
 	pubKey  []byte
+	localIP string
 }
 
 // NewMetricsSender crates MetricsSender
@@ -43,6 +44,12 @@ func NewMetricsSender(sURL, hashKey string, pubKey []byte) *metricsSender {
 		middlewares = append(middlewares, crypto(sender.pubKey))
 	}
 	sender.client.Transport = chain(sender.client.Transport, middlewares...)
+	ip, err := getLocalIP()
+	if err != nil {
+		logger.Fatal("can't get local IP", zap.Error(err))
+	}
+	sender.localIP = ip
+	logger.Info("client local IP", zap.String("IP", ip))
 	return &sender
 }
 
@@ -139,6 +146,7 @@ func (sender *metricsSender) SendBatch(collections []metrics.Collection) error {
 		}
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Content-Encoding", "gzip")
+		req.Header.Set("X-Real-IP", sender.localIP)
 
 		r, err := sender.client.Do(req)
 		if err != nil {
@@ -211,6 +219,7 @@ func (sender *metricsSender) sendMetrics(m metrics.CollectionItem) (*http.Respon
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Content-Encoding", "gzip")
+	req.Header.Set("X-Real-IP", sender.localIP)
 
 	r, err := sender.client.Do(req)
 	if err != nil {
@@ -240,4 +249,29 @@ func (sender *metricsSender) sendMetrics(m metrics.CollectionItem) (*http.Respon
 	}
 
 	return r, nil
+}
+
+// getLocalIP return local IPv4 client address
+func getLocalIP() (string, error) {
+	// get IP addresses
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		return "", fmt.Errorf("gettin IP error")
+	}
+
+	var ipAddress string
+	for _, address := range addrs {
+		ipnet, ok := address.(*net.IPNet)
+		// checking if the address is IPv4 and not loopback
+		if ok && !ipnet.IP.IsLoopback() && ipnet.IP.To4() != nil {
+			ipAddress = ipnet.IP.String()
+			break
+		}
+	}
+
+	if ipAddress == "" {
+		return "", fmt.Errorf("local IPv4 not found")
+	}
+
+	return ipAddress, nil
 }

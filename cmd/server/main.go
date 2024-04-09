@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -86,6 +87,15 @@ func run() error {
 		}
 	}
 
+	var trustedSubnet *net.IPNet
+	if conf.TrustedSubnet != "" {
+		_, trustedSubnet, err = net.ParseCIDR(conf.TrustedSubnet)
+		if err != nil {
+			logger.Error("invalid CIDR subnet string format", zap.String("subnet", conf.TrustedSubnet), zap.Error(err))
+			return err
+		}
+	}
+
 	ctx, cancel := context.WithCancel(context.Background())
 
 	// catch signals
@@ -95,7 +105,7 @@ func run() error {
 	// creating server
 	server := &http.Server{
 		Addr:    conf.Address,
-		Handler: handlers.Router(stor, conf.HashKey, privKey),
+		Handler: handlers.Router(stor, conf.HashKey, privKey, trustedSubnet),
 	}
 
 	if conf.Restore {

@@ -70,7 +70,7 @@ func TestRouter(t *testing.T) {
 	_ = m.SetCounter("foo", 1)
 	var privKey []byte
 
-	ts := httptest.NewServer(Router(m, "testkey", privKey))
+	ts := httptest.NewServer(Router(m, "testkey", privKey, nil))
 	defer ts.Close()
 
 	type want struct {
