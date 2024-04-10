@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -32,7 +33,7 @@ func main() {
 	printTags()
 
 	if err := run(); err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 }
 

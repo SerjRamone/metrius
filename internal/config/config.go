@@ -3,6 +3,7 @@ package config
 
 import (
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -48,6 +49,8 @@ const (
 	serverUsageCryptoKey       = "path to the private key file"
 	serverUsageConfig          = "path to config.json file"
 )
+
+var errTypeAssert = errors.New("type assertion error")
 
 // Agent contents config for Agent
 type Agent struct {
@@ -111,14 +114,14 @@ func (c *Agent) parseFile() error {
 		if param == "address" && c.ServerAddress == agentDefaultServerAddress {
 			c.ServerAddress, ok = val.(string)
 			if !ok {
-				return fmt.Errorf("expected type string for ServerAddress, received: %T", val)
+				return fmt.Errorf("%w: expected type string for ServerAddress, received: %T", errTypeAssert, val)
 			}
 		}
 		if param == "report_interval" && c.ReportInterval == agentDefaultReportInterval {
 			var v string
 			v, ok = val.(string)
 			if !ok {
-				return fmt.Errorf("expected type string for ReportInterval, received: %T", val)
+				return fmt.Errorf("%w: expected type string for ReportInterval, received: %T", errTypeAssert, val)
 			}
 			c.ReportInterval, err = parseInterval(v)
 			if err != nil {
@@ -129,7 +132,7 @@ func (c *Agent) parseFile() error {
 			var v string
 			v, ok = val.(string)
 			if !ok {
-				return fmt.Errorf("expected type string for PollInterval, received: %T", val)
+				return fmt.Errorf("%w: expected type string for PollInterval, received: %T", errTypeAssert, val)
 			}
 			c.PollInterval, err = parseInterval(v)
 			if err != nil {
@@ -139,7 +142,7 @@ func (c *Agent) parseFile() error {
 		if param == "crypto_key" && c.CryptoKey == agentDefaultCryptoKey {
 			c.CryptoKey, ok = val.(string)
 			if !ok {
-				return fmt.Errorf("expected type string for CryptoKey, received: %T", val)
+				return fmt.Errorf("%w: expected type string for CryptoKey, received: %T", errTypeAssert, val)
 			}
 		}
 	}
@@ -222,20 +225,20 @@ func (c *Server) parseFile() error {
 		if param == "address" && c.Address == serverDefaultAddress {
 			c.Address, ok = val.(string)
 			if !ok {
-				return fmt.Errorf("expected type string for Address, received: %T", val)
+				return fmt.Errorf("%w: expected type string for Address, received: %T", errTypeAssert, val)
 			}
 		}
 		if param == "restore" && c.Restore { // c.Restore is true by default
 			c.Restore, ok = val.(bool)
 			if !ok {
-				return fmt.Errorf("expected type bool for Restore, received: %T", val)
+				return fmt.Errorf("%w: expected type bool for Restore, received: %T", errTypeAssert, val)
 			}
 		}
 		if param == "store_interval" && c.StoreInterval == serverDefaultStoreInterval {
 			var v string
 			v, ok = val.(string)
 			if !ok {
-				return fmt.Errorf("expected type string for StoreInterval, received: %T", val)
+				return fmt.Errorf("%w: expected type string for StoreInterval, received: %T", errTypeAssert, val)
 			}
 			c.StoreInterval, err = parseInterval(v)
 			if err != nil {
@@ -245,19 +248,19 @@ func (c *Server) parseFile() error {
 		if param == "store_file" && c.FileStoragePath == serverDefaultFileStoragePath {
 			c.FileStoragePath, ok = val.(string)
 			if !ok {
-				return fmt.Errorf("expected type string for FileStoragePath, received: %T", val)
+				return fmt.Errorf("%w: expected type string for FileStoragePath, received: %T", errTypeAssert, val)
 			}
 		}
 		if param == "database_dsn" && c.DatabaseDSN == serverDefaultDatabaseDSN {
 			c.DatabaseDSN, ok = val.(string)
 			if !ok {
-				return fmt.Errorf("expected type string for DatabaseDSN, received: %T", val)
+				return fmt.Errorf("%w: expected type string for DatabaseDSN, received: %T", errTypeAssert, val)
 			}
 		}
 		if param == "crypto_key" && c.CryptoKey == serverDefaultCryptoKey {
 			c.CryptoKey, ok = val.(string)
 			if !ok {
-				return fmt.Errorf("expected type string for CryptoKey, received: %T", val)
+				return fmt.Errorf("%w: expected type string for CryptoKey, received: %T", errTypeAssert, val)
 			}
 		}
 	}
@@ -282,9 +285,9 @@ func parseInterval(v string) (int, error) {
 	if strings.HasSuffix(v, "s") {
 		v, _ = strings.CutSuffix(v, "s")
 	}
-	if interval, err := strconv.Atoi(v); err == nil {
-		return interval, nil
-	} else {
+	interval, err := strconv.Atoi(v)
+	if err != nil {
 		return 0, err
 	}
+	return interval, nil
 }
