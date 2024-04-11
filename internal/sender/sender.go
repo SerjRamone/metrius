@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net"
 	"net/http"
 	"time"
@@ -16,7 +15,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/SerjRamone/metrius/internal/metrics"
-	"github.com/SerjRamone/metrius/internal/middlewares"
 	"github.com/SerjRamone/metrius/pkg/logger"
 	"github.com/SerjRamone/metrius/pkg/retry"
 )
@@ -26,46 +24,25 @@ type metricsSender struct {
 	client  *http.Client
 	sURL    string
 	hashKey string
-}
-
-// request middleware transport
-type hashTripper struct {
-	hashKey string
-}
-
-// RoundTrip is RoundTripper implementation
-// Adds HashSHA256 header to request headers
-func (sender hashTripper) RoundTrip(req *http.Request) (*http.Response, error) {
-	var buf bytes.Buffer
-	// copy data from request body
-	_, err := io.Copy(&buf, req.Body)
-	if err != nil {
-		logger.Error("request body copy error", zap.Error(err))
-		return nil, err
-	}
-	// get bytes from buffer
-	b := buf.Bytes()
-	// set new body
-	req.Body = io.NopCloser(bytes.NewReader(b))
-	// calculate hash string
-	b64Hash := middlewares.CalcHash(b, []byte(sender.hashKey))
-	req.Header.Set("HashSHA256", b64Hash)
-	logger.Info("calculated body hash", zap.String("hash", b64Hash))
-	return http.DefaultTransport.RoundTrip(req)
+	pubKey  []byte
 }
 
 // NewMetricsSender crates MetricsSender
-func NewMetricsSender(sURL, hashKey string) *metricsSender {
+func NewMetricsSender(sURL, hashKey string, pubKey []byte) *metricsSender {
 	sender := metricsSender{
 		sURL:    "http://" + sURL,
 		hashKey: hashKey,
+		pubKey:  pubKey,
 		client:  &http.Client{},
 	}
-
+	middlewares := make([]middleware, 0, 3)
 	if sender.hashKey != "" {
-		logger.Info("requests with hash header")
-		sender.client.Transport = hashTripper{hashKey: hashKey}
+		middlewares = append(middlewares, hasher(sender.hashKey))
 	}
+	if len(sender.pubKey) != 0 {
+		middlewares = append(middlewares, crypto(sender.pubKey))
+	}
+	sender.client.Transport = chain(sender.client.Transport, middlewares...)
 	return &sender
 }
 
@@ -101,6 +78,13 @@ func (sender *metricsSender) Worker(doneCh chan struct{}, jobCh chan []metrics.C
 			}
 		case <-doneCh:
 			logger.Info("worker recived done signal")
+			collections := <-jobCh
+			if len(collections) > 0 {
+				err := sender.SendBatch(collections)
+				if err != nil {
+					logger.Error("async SendBatch error", zap.Error(err))
+				}
+			}
 			return
 		}
 	}
@@ -158,6 +142,7 @@ func (sender *metricsSender) SendBatch(collections []metrics.Collection) error {
 
 		r, err := sender.client.Do(req)
 		if err != nil {
+
 			logger.Error("first request error", zap.Error(err))
 			var netError net.Error
 			if errors.As(err, &netError) {
@@ -209,7 +194,7 @@ func (sender *metricsSender) sendMetrics(m metrics.CollectionItem) (*http.Respon
 
 	data, err := json.Marshal(item)
 	if err != nil {
-		log.Println("metrics encode error", err)
+		logger.Error("metrics encode error", zap.Error(err))
 	}
 
 	var b bytes.Buffer

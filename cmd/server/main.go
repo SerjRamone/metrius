@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -32,7 +33,7 @@ func main() {
 	printTags()
 
 	if err := run(); err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 }
 
@@ -77,16 +78,25 @@ func run() error {
 		stor = storage.NewMemStorage(conf.StoreInterval, backuper)
 	}
 
+	var privKey []byte
+	if conf.CryptoKey != "" {
+		privKey, err = os.ReadFile(conf.CryptoKey)
+		if err != nil {
+			logger.Error("reading keyfile error", zap.Error(err))
+			return fmt.Errorf("reading keyfile error: %w", err)
+		}
+	}
+
 	ctx, cancel := context.WithCancel(context.Background())
 
 	// catch signals
 	sigCh := make(chan os.Signal, 1)
-	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 
 	// creating server
 	server := &http.Server{
 		Addr:    conf.Address,
-		Handler: handlers.Router(stor, conf.HashKey),
+		Handler: handlers.Router(stor, conf.HashKey, privKey),
 	}
 
 	if conf.Restore {

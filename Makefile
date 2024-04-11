@@ -26,7 +26,7 @@ run-server: build-server
 	./cmd/server/server -a="localhost:8080" -i=0 -d=$(DSN) -k=testkey
 
 run-agent: build-agent
-	./cmd/agent/agent -a="localhost:8080" -r=10 -p=2 -k=testkey -l=2
+	./cmd/agent/agent -a="localhost:8080" -r=10 -p=2 -l=2 -k=testkey
 
 stattest:
 	go vet -vettool=statictest ./...

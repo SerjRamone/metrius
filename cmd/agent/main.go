@@ -34,13 +34,21 @@ func main() {
 		log.Fatal("config parse error: ", err)
 	}
 
-	if err := logger.Init("info"); err != nil {
+	if err = logger.Init("info"); err != nil {
 		log.Fatal("can't init logger")
 	}
 
 	logger.Info("loaded config", zap.Object("config", &conf))
 
-	sender := sender.NewMetricsSender(conf.ServerAddress, conf.HashKey)
+	var pubKey []byte
+	// check path and read key
+	if conf.CryptoKey != "" {
+		pubKey, err = os.ReadFile(conf.CryptoKey)
+		if err != nil {
+			logger.Fatal("reading keyfile error", zap.Error(err))
+		}
+	}
+	sender := sender.NewMetricsSender(conf.ServerAddress, conf.HashKey, pubKey)
 	collector := collect.New()
 
 	// closing channel
@@ -48,7 +56,7 @@ func main() {
 
 	// catch signals
 	sigCh := make(chan os.Signal, 1)
-	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 
 	// chan for jobs for senders
 	jobCh := make(chan []metrics.Collection)
@@ -118,6 +126,9 @@ func main() {
 
 			case <-doneCh:
 				logger.Info("sender recived done signal")
+				if collections := collector.Export(); len(collections) > 0 {
+					jobCh <- collections
+				}
 				return
 			}
 		}
