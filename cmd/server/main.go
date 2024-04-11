@@ -5,8 +5,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -94,7 +94,6 @@ func run() error {
 		if err != nil {
 			logger.Error("invalid CIDR subnet string format", zap.String("subnet", conf.TrustedSubnet), zap.Error(err))
 			return err
-			return fmt.Errorf("reading keyfile error: %w", err)
 		}
 	}
 

@@ -52,7 +52,7 @@ const (
 	serverUsageTrustedSubnet   = "CIDR"
 )
 
-var errTypeAssertion = errors.New("type assesrtion error")
+var errTypeAssert = errors.New("type assesrtion error")
 
 // Agent contents config for Agent
 type Agent struct {
@@ -123,15 +123,6 @@ func (c *Agent) parseFile() error {
 			var v string
 			v, ok = val.(string)
 			if !ok {
-				return errTypeAssertion
-			}
-			if strings.HasSuffix(v, "s") {
-				v, _ = strings.CutSuffix(v, "s")
-			}
-			if interval, err := strconv.Atoi(v); err == nil {
-				c.ReportInterval = interval
-			} else {
-				return err
 				return fmt.Errorf("%w: expected type string for ReportInterval, received: %T", errTypeAssert, val)
 			}
 			c.ReportInterval, err = parseInterval(v)
@@ -143,15 +134,6 @@ func (c *Agent) parseFile() error {
 			var v string
 			v, ok = val.(string)
 			if !ok {
-				return errTypeAssertion
-			}
-			if strings.HasSuffix(v, "s") {
-				v, _ = strings.CutSuffix(v, "s")
-			}
-			if interval, err := strconv.Atoi(v); err == nil {
-				c.PollInterval = interval
-			} else {
-				return err
 				return fmt.Errorf("%w: expected type string for PollInterval, received: %T", errTypeAssert, val)
 			}
 			c.PollInterval, err = parseInterval(v)
@@ -260,15 +242,6 @@ func (c *Server) parseFile() error {
 			var v string
 			v, ok = val.(string)
 			if !ok {
-				return errTypeAssertion
-			}
-			if strings.HasSuffix(v, "s") {
-				v, _ = strings.CutSuffix(val.(string), "s")
-			}
-			if interval, err := strconv.Atoi(v); err == nil {
-				c.StoreInterval = interval
-			} else {
-				return err
 				return fmt.Errorf("%w: expected type string for StoreInterval, received: %T", errTypeAssert, val)
 			}
 			c.StoreInterval, err = parseInterval(v)
