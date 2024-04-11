@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"flag"
+	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -102,12 +103,12 @@ func (c *Agent) parseEnv() error {
 func (c *Agent) parseFile() error {
 	bytes, err := os.ReadFile(c.Config)
 	if err != nil {
-		return err
+		return fmt.Errorf("reading config file <%s> error: %w", c.Config, err)
 	}
 	var tmp map[string]any
 	err = json.Unmarshal(bytes, &tmp)
 	if err != nil {
-		return err
+		return fmt.Errorf("unmarshal error: %w", err)
 	}
 
 	var ok bool
@@ -115,7 +116,7 @@ func (c *Agent) parseFile() error {
 		if param == "address" && c.ServerAddress == agentDefaultServerAddress {
 			c.ServerAddress, ok = val.(string)
 			if !ok {
-				return errTypeAssertion
+				return fmt.Errorf("%w: expected type string for ServerAddress, received: %T", errTypeAssert, val)
 			}
 		}
 		if param == "report_interval" && c.ReportInterval == agentDefaultReportInterval {
@@ -131,6 +132,11 @@ func (c *Agent) parseFile() error {
 				c.ReportInterval = interval
 			} else {
 				return err
+				return fmt.Errorf("%w: expected type string for ReportInterval, received: %T", errTypeAssert, val)
+			}
+			c.ReportInterval, err = parseInterval(v)
+			if err != nil {
+				return fmt.Errorf("parseInterval value <%s> error: %w", v, err)
 			}
 		}
 		if param == "poll_interval" && c.PollInterval == agentDefaultPollInterval {
@@ -146,12 +152,17 @@ func (c *Agent) parseFile() error {
 				c.PollInterval = interval
 			} else {
 				return err
+				return fmt.Errorf("%w: expected type string for PollInterval, received: %T", errTypeAssert, val)
+			}
+			c.PollInterval, err = parseInterval(v)
+			if err != nil {
+				return fmt.Errorf("parseInterval value <%s> error: %w", v, err)
 			}
 		}
 		if param == "crypto_key" && c.CryptoKey == agentDefaultCryptoKey {
 			c.CryptoKey, ok = val.(string)
 			if !ok {
-				return errTypeAssertion
+				return fmt.Errorf("%w: expected type string for CryptoKey, received: %T", errTypeAssert, val)
 			}
 		}
 	}
@@ -223,12 +234,12 @@ func (c *Server) parseEnv() error {
 func (c *Server) parseFile() error {
 	bytes, err := os.ReadFile(c.Config)
 	if err != nil {
-		return err
+		return fmt.Errorf("reading config file <%s> error: %w", c.Config, err)
 	}
 	var tmp map[string]any
 	err = json.Unmarshal(bytes, &tmp)
 	if err != nil {
-		return err
+		return fmt.Errorf("unmarshal error: %w", err)
 	}
 
 	var ok bool
@@ -236,13 +247,13 @@ func (c *Server) parseFile() error {
 		if param == "address" && c.Address == serverDefaultAddress {
 			c.Address, ok = val.(string)
 			if !ok {
-				return errTypeAssertion
+				return fmt.Errorf("%w: expected type string for Address, received: %T", errTypeAssert, val)
 			}
 		}
 		if param == "restore" && c.Restore { // c.Restore is true by default
 			c.Restore, ok = val.(bool)
 			if !ok {
-				return errTypeAssertion
+				return fmt.Errorf("%w: expected type bool for Restore, received: %T", errTypeAssert, val)
 			}
 		}
 		if param == "store_interval" && c.StoreInterval == serverDefaultStoreInterval {
@@ -258,30 +269,29 @@ func (c *Server) parseFile() error {
 				c.StoreInterval = interval
 			} else {
 				return err
+				return fmt.Errorf("%w: expected type string for StoreInterval, received: %T", errTypeAssert, val)
+			}
+			c.StoreInterval, err = parseInterval(v)
+			if err != nil {
+				return fmt.Errorf("parseInterval value <%s> error: %w", v, err)
 			}
 		}
 		if param == "store_file" && c.FileStoragePath == serverDefaultFileStoragePath {
 			c.FileStoragePath, ok = val.(string)
 			if !ok {
-				return errTypeAssertion
+				return fmt.Errorf("%w: expected type string for FileStoragePath, received: %T", errTypeAssert, val)
 			}
 		}
 		if param == "database_dsn" && c.DatabaseDSN == serverDefaultDatabaseDSN {
 			c.DatabaseDSN, ok = val.(string)
 			if !ok {
-				return errTypeAssertion
+				return fmt.Errorf("%w: expected type string for DatabaseDSN, received: %T", errTypeAssert, val)
 			}
 		}
 		if param == "crypto_key" && c.CryptoKey == serverDefaultCryptoKey {
 			c.CryptoKey, ok = val.(string)
 			if !ok {
-				return errTypeAssertion
-			}
-		}
-		if param == "trusted_subnet" && c.CryptoKey == serverDefaultTrustedSubnet {
-			c.TrustedSubnet, ok = val.(string)
-			if !ok {
-				return errTypeAssertion
+				return fmt.Errorf("%w: expected type string for CryptoKey, received: %T", errTypeAssert, val)
 			}
 		}
 	}
@@ -300,4 +310,16 @@ func (c *Server) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	enc.AddString("Config", c.Config)
 	enc.AddString("TrustedSubnet", c.TrustedSubnet)
 	return nil
+}
+
+// parseInterval parse string interval to int interval value
+func parseInterval(v string) (int, error) {
+	if strings.HasSuffix(v, "s") {
+		v, _ = strings.CutSuffix(v, "s")
+	}
+	interval, err := strconv.Atoi(v)
+	if err != nil {
+		return 0, err
+	}
+	return interval, nil
 }
