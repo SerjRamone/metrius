@@ -49,7 +49,11 @@ func main() {
 			return
 		}
 	}
-	sender := sender.NewMetricsSender(conf.ServerAddress, conf.HashKey, pubKey)
+	sender, err := sender.NewMetricsSender(conf.ServerAddress, conf.HashKey, pubKey, conf.ServerType)
+	if err != nil {
+		logger.Error("NewMetricsSender() error", zap.Error(err))
+		return
+	}
 	collector := collect.New()
 
 	// closing channel

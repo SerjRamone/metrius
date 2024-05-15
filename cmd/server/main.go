@@ -20,6 +20,7 @@ import (
 
 	"github.com/SerjRamone/metrius/internal/config"
 	"github.com/SerjRamone/metrius/internal/handlers"
+	"github.com/SerjRamone/metrius/internal/server"
 	"github.com/SerjRamone/metrius/internal/storage"
 	"github.com/SerjRamone/metrius/pkg/logger"
 )
@@ -103,10 +104,14 @@ func run() error {
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 
-	// creating server
-	server := &http.Server{
-		Addr:    conf.Address,
-		Handler: handlers.Router(stor, conf.HashKey, privKey, trustedSubnet),
+	var serv server.Server
+	if conf.Type == "http" {
+		serv = server.NewHTTPServer(conf.Address, handlers.Router(stor, conf.HashKey, privKey, trustedSubnet))
+	} else if conf.Type == "grpc" {
+		serv = server.NewGRPCServer(conf.Address, stor)
+	} else {
+		logger.Error("invalid server type", zap.String("type", conf.Type))
+		cancel()
 	}
 
 	if conf.Restore {
@@ -136,7 +141,11 @@ func run() error {
 
 	go func() {
 		logger.Info("starting server...")
-		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		// if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		// 	logger.Error("server start error", zap.Error(err))
+		// 	cancel()
+		// }
+		if err := serv.Up(); err != nil && err != http.ErrServerClosed {
 			logger.Error("server start error", zap.Error(err))
 			cancel()
 		}
@@ -151,8 +160,7 @@ func run() error {
 		shutdownCtx, cancel := context.WithTimeout(ctx, timeout)
 		defer cancel()
 
-		// shutting down server
-		if err := server.Shutdown(shutdownCtx); err != nil {
+		if err := serv.Down(shutdownCtx); err != nil {
 			logger.Error("server shutting down error", zap.Error(err))
 		} else {
 			logger.Info("server shut down gracefully")
