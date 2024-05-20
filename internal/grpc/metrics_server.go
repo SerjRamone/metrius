@@ -54,7 +54,7 @@ func (s *MetricsServer) Update(ctx context.Context, in *pb.UpdateRequest) (*pb.U
 // BatchUpdate ...
 func (s *MetricsServer) BatchUpdate(ctx context.Context, in *pb.BatchUpdateRequest) (*pb.BatchUpdateResponse, error) {
 	var response pb.BatchUpdateResponse
-	var batch []metrics.Metrics
+	batch := make([]metrics.Metrics, 0, len(in.Metrics))
 	for _, m := range in.Metrics {
 		var mType string
 		switch m.Type {
