@@ -61,7 +61,7 @@ func (bHandler baseHandler) Update() http.HandlerFunc {
 				return
 			}
 
-			if err := bHandler.storage.SetCounter(mName, metrics.Counter(c)); err != nil {
+			if err := bHandler.storage.SetCounter(r.Context(), mName, metrics.Counter(c)); err != nil {
 				log.Fatal("can't set counter", err)
 				return
 			}
@@ -73,7 +73,7 @@ func (bHandler baseHandler) Update() http.HandlerFunc {
 				return
 			}
 
-			if err := bHandler.storage.SetGauge(mName, metrics.Gauge(g)); err != nil {
+			if err := bHandler.storage.SetGauge(r.Context(), mName, metrics.Gauge(g)); err != nil {
 				log.Fatal("can't set gauge", err)
 				return
 			}
@@ -137,7 +137,7 @@ func (bHandler baseHandler) Updates() http.HandlerFunc {
 			return
 		}
 
-		if err := bHandler.storage.BatchUpsert(batch); err != nil {
+		if err := bHandler.storage.BatchUpsert(r.Context(), batch); err != nil {
 			logger.Info("cannot do batch upsert", zap.Error(err))
 			w.WriteHeader(http.StatusBadRequest)
 			return
@@ -206,12 +206,12 @@ func (bHandler baseHandler) UpdateJSON() http.HandlerFunc {
 
 		switch req.MType {
 		case "counter":
-			if err = bHandler.storage.SetCounter(req.ID, metrics.Counter(*req.Delta)); err != nil {
+			if err = bHandler.storage.SetCounter(r.Context(), req.ID, metrics.Counter(*req.Delta)); err != nil {
 				logger.Fatal("can't set counter", zap.Error(err))
 				return
 			}
 			// set new value for response
-			newValue, ok := bHandler.storage.Counter(req.ID)
+			newValue, ok := bHandler.storage.Counter(r.Context(), req.ID)
 			if !ok {
 				logger.Info("can't get new value of counter",
 					zap.String("req.ID", req.ID),
@@ -222,7 +222,7 @@ func (bHandler baseHandler) UpdateJSON() http.HandlerFunc {
 			req.Delta = &intValue
 
 		case "gauge":
-			if err = bHandler.storage.SetGauge(req.ID, metrics.Gauge(*req.Value)); err != nil {
+			if err = bHandler.storage.SetGauge(r.Context(), req.ID, metrics.Gauge(*req.Value)); err != nil {
 				logger.Fatal("can't set gauge", zap.Error(err))
 				return
 			}

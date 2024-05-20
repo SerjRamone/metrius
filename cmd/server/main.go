@@ -116,7 +116,7 @@ func run() error {
 
 	if conf.Restore {
 		if v, ok := stor.(storage.MemStorage); ok {
-			if err := v.Restore(); err != nil {
+			if err := v.Restore(ctx); err != nil {
 				logger.Error("can't restore from file", zap.Error(err))
 				cancel()
 			}
@@ -131,7 +131,7 @@ func run() error {
 				for {
 					<-ticker.C
 
-					if err := v.Backup(); err != nil {
+					if err := v.Backup(ctx); err != nil {
 						logger.Error("backup error", zap.Error(err))
 					}
 				}
@@ -141,10 +141,6 @@ func run() error {
 
 	go func() {
 		logger.Info("starting server...")
-		// if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		// 	logger.Error("server start error", zap.Error(err))
-		// 	cancel()
-		// }
 		if err := serv.Up(); err != nil && err != http.ErrServerClosed {
 			logger.Error("server start error", zap.Error(err))
 			cancel()
@@ -168,7 +164,7 @@ func run() error {
 
 		// backup metrics
 		if v, ok := stor.(storage.MemStorage); ok {
-			if err := v.Backup(); err != nil {
+			if err := v.Backup(shutdownCtx); err != nil {
 				logger.Error("backup error", zap.Error(err))
 			}
 		}

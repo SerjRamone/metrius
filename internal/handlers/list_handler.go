@@ -28,10 +28,10 @@ func (bHandler baseHandler) List() http.HandlerFunc {
 			</body>
 		</html>`
 		metrics := map[string]string{}
-		for name, value := range bHandler.storage.Gauges() {
+		for name, value := range bHandler.storage.Gauges(r.Context()) {
 			metrics[name] = fmt.Sprintf("%v", value)
 		}
-		for name, value := range bHandler.storage.Counters() {
+		for name, value := range bHandler.storage.Counters(r.Context()) {
 			metrics[name] = fmt.Sprintf("%v", value)
 		}
 

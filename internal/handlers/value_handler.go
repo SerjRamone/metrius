@@ -32,14 +32,14 @@ func (bHandler baseHandler) Value() http.HandlerFunc {
 
 		switch mType {
 		case "gauge":
-			v, ok := bHandler.storage.Gauge(mName)
+			v, ok := bHandler.storage.Gauge(r.Context(), mName)
 			if !ok {
 				http.Error(w, "not found", http.StatusNotFound)
 				return
 			}
 			mValue = fmt.Sprint(v)
 		case "counter":
-			v, ok := bHandler.storage.Counter(mName)
+			v, ok := bHandler.storage.Counter(r.Context(), mName)
 			if !ok {
 				http.Error(w, "not found", http.StatusNotFound)
 				return
@@ -102,7 +102,7 @@ func (bHandler baseHandler) ValueJSON() http.HandlerFunc {
 
 		switch req.MType {
 		case "gauge":
-			v, ok := bHandler.storage.Gauge(req.ID)
+			v, ok := bHandler.storage.Gauge(r.Context(), req.ID)
 			if !ok {
 				http.Error(w, "not found", http.StatusNotFound)
 				return
@@ -110,7 +110,7 @@ func (bHandler baseHandler) ValueJSON() http.HandlerFunc {
 			tmpV := float64(v)
 			req.Value = &tmpV
 		case "counter":
-			v, ok := bHandler.storage.Counter(req.ID)
+			v, ok := bHandler.storage.Counter(r.Context(), req.ID)
 			if !ok {
 				http.Error(w, "not found", http.StatusNotFound)
 				return
