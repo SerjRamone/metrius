@@ -82,8 +82,7 @@ func (s *GRPCServer) Up() error {
 }
 
 // Down ...
-func (s *GRPCServer) Down(ctx context.Context) error {
-	_ = ctx
+func (s *GRPCServer) Down(_ context.Context) error {
 	s.server.GracefulStop()
 	return nil
 }

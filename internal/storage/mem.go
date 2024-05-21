@@ -70,7 +70,7 @@ func (s MemStorage) SetGauge(ctx context.Context, name string, value metrics.Gau
 }
 
 // Gauge returns value of type gauge by name
-func (s MemStorage) Gauge(ctx context.Context, name string) (v metrics.Gauge, ok bool) {
+func (s MemStorage) Gauge(_ context.Context, name string) (v metrics.Gauge, ok bool) {
 	v, ok = s.gauges[name]
 	return
 }
