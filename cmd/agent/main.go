@@ -45,10 +45,15 @@ func main() {
 	if conf.CryptoKey != "" {
 		pubKey, err = os.ReadFile(conf.CryptoKey)
 		if err != nil {
-			logger.Fatal("reading keyfile error", zap.Error(err))
+			logger.Error("reading keyfile error", zap.Error(err))
+			return
 		}
 	}
-	sender := sender.NewMetricsSender(conf.ServerAddress, conf.HashKey, pubKey)
+	sender, err := sender.NewMetricsSender(conf.ServerAddress, conf.HashKey, pubKey, conf.ServerType)
+	if err != nil {
+		logger.Error("NewMetricsSender() error", zap.Error(err))
+		return
+	}
 	collector := collect.New()
 
 	// closing channel

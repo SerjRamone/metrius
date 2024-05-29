@@ -25,8 +25,14 @@ build-linter:
 run-server: build-server
 	./cmd/server/server -a="localhost:8080" -i=0 -d=$(DSN) -k=testkey
 
+run-server-grpc: build-server
+	./cmd/server/server -a="localhost:8080" -i=0 -d=$(DSN) -k=testkey -type=grpc
+
 run-agent: build-agent
 	./cmd/agent/agent -a="localhost:8080" -r=10 -p=2 -l=2 -k=testkey
+	
+run-agent-grpc: build-agent
+	./cmd/agent/agent -a="localhost:8080" -r=10 -p=2 -l=2 -k=testkey -server-type=grpc
 
 stattest:
 	go vet -vettool=statictest ./...
@@ -34,6 +40,13 @@ stattest:
 
 test:
 	go test -v -race ./...
+
+protogenerate:
+	mkdir -p pkg/metrius_v1
+	protoc --proto_path api/v1 \
+        --go_out=./pkg/metrius_v1 --go_opt=paths=source_relative \
+        --go-grpc_out=./pkg/metrius_v1 --go-grpc_opt=paths=source_relative \
+        api/v1/metrius.proto
 	
 autotests: build autotest_up_to24
 	

@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -67,10 +68,10 @@ func TestRouter(t *testing.T) {
 	f, _ := os.CreateTemp(os.TempDir(), "")
 	fb := storage.NewFileBackuper(f)
 	m := storage.NewMemStorage(300, fb)
-	_ = m.SetCounter("foo", 1)
+	_ = m.SetCounter(context.TODO(), "foo", 1)
 	var privKey []byte
 
-	ts := httptest.NewServer(Router(m, "testkey", privKey))
+	ts := httptest.NewServer(Router(m, "testkey", privKey, nil))
 	defer ts.Close()
 
 	type want struct {

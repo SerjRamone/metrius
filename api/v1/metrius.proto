@@ -1,0 +1,64 @@
+syntax = "proto3";
+
+package grpc;
+
+option go_package = "github.com/SerjRamone/metrius/internal/metrius_v1";
+
+// Metrics - base message struct of metrics type
+message Metrics {
+  enum MetricsType {
+    UNKNOWN = 0;
+    GAUGE = 1;
+    COUNTER = 2;
+  }
+
+  // id - unique metrics ID
+  string id = 1;
+
+  // type - metrics type (GAUGE/COUNTER)
+  MetricsType type = 2; 
+
+  // delta - value of metrics with type COUNTER
+  int64 delta = 3; 
+  
+  // value - value of metrics with type GAUGE
+  double value = 4;
+}
+
+// UpdateRequest - updates single metrics value request
+message UpdateRequest {
+  Metrics metrics = 1;
+}
+
+// UpdateResponse - updates single metrics value response
+message UpdateResponse {
+  Metrics metrics = 1;
+  string error = 2;
+}
+
+// BatchUpdateRequest - updates multiple metrics values request 
+message BatchUpdateRequest {
+  repeated Metrics metrics = 1;
+}
+
+// BatchUpdateResponse - updates multiple metrics values response
+message BatchUpdateResponse {
+  string error = 1;
+}
+
+// GetMetricsRequest - get single metrics value request
+message GetMetricsRequest {
+  Metrics metrics = 1;
+}
+
+// GetMetricsResponse - get single metrics value response
+message GetMetricsResponse {
+  Metrics metrics = 1;
+  string error = 2;
+}
+
+service MetricsService {
+  rpc Update(UpdateRequest) returns (UpdateResponse);
+  rpc BatchUpdate(BatchUpdateRequest) returns (BatchUpdateResponse);
+  rpc GetMetrics(GetMetricsRequest) returns (GetMetricsResponse);
+}

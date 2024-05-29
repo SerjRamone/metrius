@@ -22,6 +22,7 @@ const (
 	agentDefaultRateLimit      = 1
 	agentDefaultCryptoKey      = ""
 	agentDefaultConfig         = ""
+	agentDefaultServerType     = "http"
 
 	agentUsageServerAddress  = "address and port of metrics server"
 	agentUsageReportInterval = "period of time for sending data to server in seconds"
@@ -30,6 +31,7 @@ const (
 	agentUsageRateLimit      = "number of synchronous outgoing requests"
 	agentUsageCryptoKey      = "path to the public key file"
 	agentUsageConfig         = "path to config.json file"
+	agentUsageServerType     = "type of server (HTTP/gRPC)"
 
 	serverDefaultAddress         = "localhost:8080"
 	serverDefaultStoreInterval   = 300
@@ -39,6 +41,8 @@ const (
 	serverDefaultHashKey         = ""
 	serverDefaultCryptoKey       = ""
 	serverDefaultConfig          = ""
+	serverDefaultTrustedSubnet   = ""
+	serverDefaultType            = "http"
 
 	serverUsageAddress         = "address and port to run server"
 	serverUsageStoreInterval   = "period of time for put metrics to file"
@@ -48,9 +52,11 @@ const (
 	serverUsageHashKey         = "key string for hashing function"
 	serverUsageCryptoKey       = "path to the private key file"
 	serverUsageConfig          = "path to config.json file"
+	serverUsageTrustedSubnet   = "CIDR"
+	serverUsageType            = "type of server (HTTP/gRPC)"
 )
 
-var errTypeAssert = errors.New("type assertion error")
+var errTypeAssert = errors.New("type assesrtion error")
 
 // Agent contents config for Agent
 type Agent struct {
@@ -61,6 +67,7 @@ type Agent struct {
 	PollInterval   int    `env:"POLL_INTERVAL" json:"poll_interval"`
 	RateLimit      int    `env:"RATE_LIMIT"`
 	Config         string `env:"CONFIG"`
+	ServerType     string `env:"SERVER_TYPE"`
 }
 
 // NewAgent constructor for agent config
@@ -88,6 +95,7 @@ func (c *Agent) parseFlags() {
 	flag.StringVar(&c.CryptoKey, "crypto-key", agentDefaultCryptoKey, agentUsageCryptoKey)
 	flag.StringVar(&c.CryptoKey, "c", agentDefaultConfig, agentUsageConfig)
 	flag.StringVar(&c.CryptoKey, "config", agentDefaultConfig, agentUsageConfig)
+	flag.StringVar(&c.ServerType, "server-type", agentDefaultServerType, agentUsageServerType)
 
 	flag.Parse()
 }
@@ -145,6 +153,12 @@ func (c *Agent) parseFile() error {
 				return fmt.Errorf("%w: expected type string for CryptoKey, received: %T", errTypeAssert, val)
 			}
 		}
+		if param == "server_type" && c.ServerType == agentDefaultServerType {
+			c.ServerType, ok = val.(string)
+			if !ok {
+				return fmt.Errorf("%w: expected type string for ServerType, received: %T", errTypeAssert, val)
+			}
+		}
 	}
 	return nil
 }
@@ -158,6 +172,7 @@ func (c *Agent) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	enc.AddInt("RateLimit", c.RateLimit)
 	enc.AddString("CryptoKey", c.CryptoKey)
 	enc.AddString("Config", c.Config)
+	enc.AddString("ServerType", c.ServerType)
 	return nil
 }
 
@@ -171,6 +186,8 @@ type Server struct {
 	StoreInterval   int    `env:"STORE_INTERVAL" json:"store_interval"`
 	Restore         bool   `env:"RESTORE" json:"restore"`
 	Config          string `env:"CONFIG"`
+	TrustedSubnet   string `env:"TRUSTED_SUBNET"`
+	Type            string `env:"TYPE"`
 }
 
 // NewServer constructor for server config
@@ -199,6 +216,8 @@ func (c *Server) parseFlags() {
 	flag.StringVar(&c.CryptoKey, "crypto-key", serverDefaultCryptoKey, serverUsageCryptoKey)
 	flag.StringVar(&c.Config, "c", serverDefaultConfig, serverUsageConfig)
 	flag.StringVar(&c.Config, "config", serverDefaultConfig, serverUsageConfig)
+	flag.StringVar(&c.TrustedSubnet, "t", serverDefaultTrustedSubnet, serverUsageTrustedSubnet)
+	flag.StringVar(&c.Type, "type", serverDefaultType, serverUsageType)
 
 	flag.Parse()
 }
@@ -263,6 +282,12 @@ func (c *Server) parseFile() error {
 				return fmt.Errorf("%w: expected type string for CryptoKey, received: %T", errTypeAssert, val)
 			}
 		}
+		if param == "type" && c.Type == serverDefaultType {
+			c.Type, ok = val.(string)
+			if !ok {
+				return fmt.Errorf("%w: expected type string for Type, received: %T", errTypeAssert, val)
+			}
+		}
 	}
 	return nil
 }
@@ -277,6 +302,8 @@ func (c *Server) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	enc.AddString("HashKey", c.HashKey)
 	enc.AddString("CryptoKey", c.CryptoKey)
 	enc.AddString("Config", c.Config)
+	enc.AddString("TrustedSubnet", c.TrustedSubnet)
+	enc.AddString("Type", c.Type)
 	return nil
 }
 

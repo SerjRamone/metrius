@@ -53,8 +53,8 @@ func NewSQLStorage(dsn string) (SQLStorage, error) {
 }
 
 // SetGauge insert or update metrics value of type gauge
-func (dbs SQLStorage) SetGauge(name string, value metrics.Gauge) error {
-	stmt, err := dbs.db.PrepareContext(context.TODO(), "INSERT INTO metrics (id, mtype, value) VALUES ($1, $2, $3) ON CONFLICT (id) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()")
+func (dbs SQLStorage) SetGauge(ctx context.Context, name string, value metrics.Gauge) error {
+	stmt, err := dbs.db.PrepareContext(ctx, "INSERT INTO metrics (id, mtype, value) VALUES ($1, $2, $3) ON CONFLICT (id) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()")
 	if err != nil {
 		logger.Error("statement creating error", zap.Error(err))
 		return err
@@ -79,8 +79,8 @@ func (dbs SQLStorage) SetGauge(name string, value metrics.Gauge) error {
 }
 
 // Gauge returns value of type gauge by name
-func (dbs SQLStorage) Gauge(name string) (metrics.Gauge, bool) {
-	stmt, err := dbs.db.PrepareContext(context.TODO(), "SELECT value FROM metrics WHERE mtype='gauge' AND id=$1")
+func (dbs SQLStorage) Gauge(ctx context.Context, name string) (metrics.Gauge, bool) {
+	stmt, err := dbs.db.PrepareContext(ctx, "SELECT value FROM metrics WHERE mtype='gauge' AND id=$1")
 	if err != nil {
 		logger.Error("statement creating error", zap.Error(err))
 		return 0, false
@@ -111,9 +111,9 @@ func (dbs SQLStorage) Gauge(name string) (metrics.Gauge, bool) {
 }
 
 // Gauges returns map of all setted gauges
-func (dbs SQLStorage) Gauges() map[string]metrics.Gauge {
+func (dbs SQLStorage) Gauges(ctx context.Context) map[string]metrics.Gauge {
 	result := map[string]metrics.Gauge{}
-	rows, err := dbs.db.QueryContext(context.TODO(), "SELECT id, delta FROM metrics WHERE mtype='gauge'")
+	rows, err := dbs.db.QueryContext(ctx, "SELECT id, delta FROM metrics WHERE mtype='gauge'")
 	if err != nil {
 		logger.Error("can't do select query")
 		return result
@@ -142,8 +142,8 @@ func (dbs SQLStorage) Gauges() map[string]metrics.Gauge {
 }
 
 // SetCounter increase metrics value of type counter
-func (dbs SQLStorage) SetCounter(name string, value metrics.Counter) error {
-	stmt, err := dbs.db.PrepareContext(context.TODO(), "INSERT INTO metrics (id, mtype, delta) VALUES ($1, $2, $3) ON CONFLICT (id) DO UPDATE SET delta = EXCLUDED.delta + metrics.delta, updated_at = NOW()")
+func (dbs SQLStorage) SetCounter(ctx context.Context, name string, value metrics.Counter) error {
+	stmt, err := dbs.db.PrepareContext(ctx, "INSERT INTO metrics (id, mtype, delta) VALUES ($1, $2, $3) ON CONFLICT (id) DO UPDATE SET delta = EXCLUDED.delta + metrics.delta, updated_at = NOW()")
 	if err != nil {
 		logger.Error("statement creating error", zap.Error(err))
 		return err
@@ -159,8 +159,8 @@ func (dbs SQLStorage) SetCounter(name string, value metrics.Counter) error {
 }
 
 // Counter returns value of type counter by name
-func (dbs SQLStorage) Counter(name string) (metrics.Counter, bool) {
-	stmt, err := dbs.db.PrepareContext(context.TODO(), "SELECT delta FROM metrics WHERE mtype='counter' AND id=$1")
+func (dbs SQLStorage) Counter(ctx context.Context, name string) (metrics.Counter, bool) {
+	stmt, err := dbs.db.PrepareContext(ctx, "SELECT delta FROM metrics WHERE mtype='counter' AND id=$1")
 	if err != nil {
 		logger.Error("statement creating error", zap.Error(err))
 		return 0, false
@@ -179,9 +179,9 @@ func (dbs SQLStorage) Counter(name string) (metrics.Counter, bool) {
 }
 
 // Counters returns map of all setted counters
-func (dbs SQLStorage) Counters() map[string]metrics.Counter {
+func (dbs SQLStorage) Counters(ctx context.Context) map[string]metrics.Counter {
 	result := map[string]metrics.Counter{}
-	rows, err := dbs.db.QueryContext(context.TODO(), "SELECT id, delta FROM metrics WHERE mtype='counter'")
+	rows, err := dbs.db.QueryContext(ctx, "SELECT id, delta FROM metrics WHERE mtype='counter'")
 	if err != nil {
 		logger.Error("can't do select query")
 		return result
@@ -210,7 +210,7 @@ func (dbs SQLStorage) Counters() map[string]metrics.Counter {
 }
 
 // BatchUpsert insert or updates metrics in batches
-func (dbs SQLStorage) BatchUpsert(batch []metrics.Metrics) error {
+func (dbs SQLStorage) BatchUpsert(ctx context.Context, batch []metrics.Metrics) error {
 	tx, err := dbs.db.Begin()
 	if err != nil {
 		logger.Error("transaction begin error", zap.Error(err))
@@ -218,7 +218,7 @@ func (dbs SQLStorage) BatchUpsert(batch []metrics.Metrics) error {
 	}
 
 	// gauge statement
-	stmtG, err := dbs.db.PrepareContext(context.TODO(), "INSERT INTO metrics (id, mtype, value) VALUES ($1, $2, $3) ON CONFLICT (id) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()")
+	stmtG, err := dbs.db.PrepareContext(ctx, "INSERT INTO metrics (id, mtype, value) VALUES ($1, $2, $3) ON CONFLICT (id) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()")
 	if err != nil {
 		logger.Error("gauge statement creating error", zap.Error(err))
 		return err
@@ -226,7 +226,7 @@ func (dbs SQLStorage) BatchUpsert(batch []metrics.Metrics) error {
 	defer stmtG.Close()
 
 	// counter statement
-	stmtC, err := dbs.db.PrepareContext(context.TODO(), "INSERT INTO metrics (id, mtype, delta) VALUES ($1, $2, $3) ON CONFLICT (id) DO UPDATE SET delta = EXCLUDED.delta + metrics.delta, updated_at = NOW()")
+	stmtC, err := dbs.db.PrepareContext(ctx, "INSERT INTO metrics (id, mtype, delta) VALUES ($1, $2, $3) ON CONFLICT (id) DO UPDATE SET delta = EXCLUDED.delta + metrics.delta, updated_at = NOW()")
 	if err != nil {
 		logger.Error("counter statement creating error", zap.Error(err))
 		return err
@@ -236,7 +236,7 @@ func (dbs SQLStorage) BatchUpsert(batch []metrics.Metrics) error {
 	for _, m := range batch {
 		switch m.MType {
 		case "gauge":
-			_, err := stmtG.ExecContext(context.TODO(), m.ID, "gauge", float64(*m.Value))
+			_, err := stmtG.ExecContext(ctx, m.ID, "gauge", float64(*m.Value))
 			if err != nil {
 				logger.Error("batch upsert gauge error", zap.Error(err))
 				if err = tx.Rollback(); err != nil {
@@ -245,7 +245,7 @@ func (dbs SQLStorage) BatchUpsert(batch []metrics.Metrics) error {
 				return err
 			}
 		case "counter":
-			_, err := stmtC.ExecContext(context.TODO(), m.ID, "counter", int64(*m.Delta))
+			_, err := stmtC.ExecContext(ctx, m.ID, "counter", int64(*m.Delta))
 			if err != nil {
 				logger.Error("batch upsert counter error", zap.Error(err))
 				if err = tx.Rollback(); err != nil {
